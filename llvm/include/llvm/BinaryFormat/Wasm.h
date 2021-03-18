@@ -229,6 +229,7 @@ enum : unsigned {
   WASM_TYPE_I64 = 0x7E,
   WASM_TYPE_F32 = 0x7D,
   WASM_TYPE_F64 = 0x7C,
+  WASM_TYPE_HANDLE = 0xFF, // picked this arbitrarily, TODO should figure out what it should actually be
   WASM_TYPE_V128 = 0x7B,
   WASM_TYPE_FUNCREF = 0x70,
   WASM_TYPE_EXNREF = 0x68,
@@ -359,6 +360,7 @@ enum class ValType {
   I64 = WASM_TYPE_I64,
   F32 = WASM_TYPE_F32,
   F64 = WASM_TYPE_F64,
+  HANDLE = WASM_TYPE_HANDLE,
   V128 = WASM_TYPE_V128,
   EXNREF = WASM_TYPE_EXNREF,
   EXTERNREF = WASM_TYPE_EXTERNREF,

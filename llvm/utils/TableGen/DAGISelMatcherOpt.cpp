@@ -26,7 +26,7 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
   // If we reached the end of the chain, we're done.
   Matcher *N = MatcherPtr.get();
   if (!N) return;
-  
+
   // If we have a scope node, walk down all of the children.
   if (ScopeMatcher *Scope = dyn_cast<ScopeMatcher>(N)) {
     for (unsigned i = 0, e = Scope->getNumChildren(); i != e; ++i) {
@@ -36,7 +36,7 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
     }
     return;
   }
-  
+
   // If we found a movechild node with a node that comes in a 'foochild' form,
   // transform it.
   if (MoveChildMatcher *MC = dyn_cast<MoveChildMatcher>(N)) {
@@ -72,10 +72,10 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       return ContractNodes(MatcherPtr, CGP);
     }
   }
-  
+
   // Zap movechild -> moveparent.
   if (MoveChildMatcher *MC = dyn_cast<MoveChildMatcher>(N))
-    if (MoveParentMatcher *MP = 
+    if (MoveParentMatcher *MP =
           dyn_cast<MoveParentMatcher>(MC->getNext())) {
       MatcherPtr.reset(MP->takeNext());
       return ContractNodes(MatcherPtr, CGP);
@@ -91,12 +91,12 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       for (unsigned i = 0, e = CM->getNumResults(); i != e; ++i)
         if (CM->getResult(i) != RootResultFirst+i)
           ResultsMatch = false;
-      
+
       // If the selected node defines a subset of the glue/chain results, we
       // can't use MorphNodeTo.  For example, we can't use MorphNodeTo if the
       // matched pattern has a chain but the root node doesn't.
       const PatternToMatch &Pattern = CM->getPattern();
-      
+
       if (!EN->hasChain() &&
           Pattern.getSrcPattern()->NodeHasProperty(SDNPHasChain, CGP))
         ResultsMatch = false;
@@ -110,8 +110,8 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       if (!EN->hasOutFlag() &&
           Pattern.getSrcPattern()->NodeHasProperty(SDNPOutGlue, CGP))
         ResultsMatch = false;
-      
-      
+
+
       // If the root result node defines more results than the source root node
       // *and* has a chain or glue input, then we can't match it because it
       // would end up replacing the extra result with the chain/glue.
@@ -120,7 +120,7 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
           EN->getNumNonChainGlueVTs() > ... need to get no results reliably ...)
         ResultMatch = false;
 #endif
-          
+
       if (ResultsMatch) {
         const SmallVectorImpl<MVT::SimpleValueType> &VTs = EN->getVTList();
         const SmallVectorImpl<unsigned> &Operands = EN->getOperandList();
@@ -137,10 +137,10 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       // FIXME2: Kill off all the SelectionDAG::SelectNodeTo and getMachineNode
       // variants.
     }
-  
+
   ContractNodes(N->getNextPtr(), CGP);
-  
-  
+
+
   // If we have a CheckType/CheckChildType/Record node followed by a
   // CheckOpcode, invert the two nodes.  We prefer to do structural checks
   // before type checks, as this opens opportunities for factoring on targets
@@ -152,7 +152,7 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
     Matcher *CheckType = MatcherPtr.release();
     Matcher *CheckOpcode = CheckType->takeNext();
     Matcher *Tail = CheckOpcode->takeNext();
-    
+
     // Relink them.
     MatcherPtr.reset(CheckOpcode);
     CheckOpcode->setNext(CheckType);
@@ -199,16 +199,16 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       RebindableMatcherPtr = &(N->getNextPtr());
   }
   std::unique_ptr<Matcher> &MatcherPtr = *RebindableMatcherPtr;
-  
+
   // Okay, pull together the children of the scope node into a vector so we can
   // inspect it more easily.
   SmallVector<Matcher*, 32> OptionsToMatch;
-  
+
   for (unsigned i = 0, e = Scope->getNumChildren(); i != e; ++i) {
     // Factor the subexpression.
     std::unique_ptr<Matcher> Child(Scope->takeChild(i));
     FactorNodes(Child);
-    
+
     if (Child) {
       // If the child is a ScopeMatcher we can just merge its contents.
       if (auto *SM = dyn_cast<ScopeMatcher>(Child.get())) {
@@ -219,9 +219,9 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       }
     }
   }
-  
+
   SmallVector<Matcher*, 32> NewOptionsToMatch;
-  
+
   // Loop over options to match, merging neighboring patterns with identical
   // starting nodes into a shared matcher.
   for (unsigned OptionIdx = 0, e = OptionsToMatch.size(); OptionIdx != e;) {
@@ -232,14 +232,14 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       NewOptionsToMatch.push_back(Optn);
       continue;
     }
-    
+
     // See if the next option starts with the same matcher.  If the two
     // neighbors *do* start with the same matcher, we can factor the matcher out
     // of at least these two patterns.  See what the maximal set we can merge
     // together is.
     SmallVector<Matcher*, 8> EqualMatchers;
     EqualMatchers.push_back(Optn);
-    
+
     // Factor all of the known-equal matchers after this one into the same
     // group.
     while (OptionIdx != e && OptionsToMatch[OptionIdx]->isEqual(Optn))
@@ -253,9 +253,9 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
     while (1) {
       // If we ran out of stuff to scan, we're done.
       if (Scan == e) break;
-      
+
       Matcher *ScanMatcher = OptionsToMatch[Scan];
-      
+
       // If we found an entry that matches out matcher, merge it into the set to
       // handle.
       if (Optn->isEqual(ScanMatcher)) {
@@ -266,7 +266,7 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
         --e;
         continue;
       }
-      
+
       // If the option we're checking for contradicts the start of the list,
       // skip over it.
       if (Optn->isContradictory(ScanMatcher)) {
@@ -288,11 +288,11 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
           continue;
         }
       }
-      
+
       // Otherwise, we don't know how to handle this entry, we have to bail.
       break;
     }
-      
+
     if (Scan != e &&
         // Don't print it's obvious nothing extra could be merged anyway.
         Scan+1 != e) {
@@ -303,14 +303,14 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
                  if (Scan + 2 < e) OptionsToMatch[Scan + 2]->printOne(errs());
                  errs() << "\n");
     }
-    
+
     // If we only found one option starting with this matcher, no factoring is
     // possible.
     if (EqualMatchers.size() == 1) {
       NewOptionsToMatch.push_back(EqualMatchers[0]);
       continue;
     }
-    
+
     // Factor these checks by pulling the first node off each entry and
     // discarding it.  Take the first one off the first entry to reuse.
     Matcher *Shared = Optn;
@@ -323,30 +323,30 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       delete EqualMatchers[i];
       EqualMatchers[i] = Tmp;
     }
-    
+
     Shared->setNext(new ScopeMatcher(EqualMatchers));
 
     // Recursively factor the newly created node.
     FactorNodes(Shared->getNextPtr());
-    
+
     NewOptionsToMatch.push_back(Shared);
   }
-  
+
   // If we're down to a single pattern to match, then we don't need this scope
   // anymore.
   if (NewOptionsToMatch.size() == 1) {
     MatcherPtr.reset(NewOptionsToMatch[0]);
     return;
   }
-  
+
   if (NewOptionsToMatch.empty()) {
     MatcherPtr.reset();
     return;
   }
-  
+
   // If our factoring failed (didn't achieve anything) see if we can simplify in
   // other ways.
-  
+
   // Check to see if all of the leading entries are now opcode checks.  If so,
   // we can convert this Scope to be a OpcodeSwitch instead.
   bool AllOpcodeChecks = true, AllTypeChecks = true;
@@ -387,7 +387,7 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       }
     }
   }
-  
+
   // If all the options are CheckOpcode's, we can form the SwitchOpcode, woot.
   if (AllOpcodeChecks) {
     StringSet<> Opcodes;
@@ -399,11 +399,11 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
       Cases.push_back(std::make_pair(&COM->getOpcode(), COM->takeNext()));
       delete COM;
     }
-    
+
     MatcherPtr.reset(new SwitchOpcodeMatcher(Cases));
     return;
   }
-  
+
   // If all the options are CheckType's, we can form the SwitchType, woot.
   if (AllTypeChecks) {
     DenseMap<unsigned, unsigned> TypeEntry;
@@ -426,16 +426,16 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
           SM->resetChild(SM->getNumChildren()-1, MatcherWithoutCTM);
           continue;
         }
-        
+
         Matcher *Entries[2] = { PrevMatcher, MatcherWithoutCTM };
         Cases[Entry-1].second = new ScopeMatcher(Entries);
         continue;
       }
-      
+
       Entry = Cases.size()+1;
       Cases.push_back(std::make_pair(CTMTy, MatcherWithoutCTM));
     }
-    
+
     // Make sure we recursively factor any scopes we may have created.
     for (auto &M : Cases) {
       if (ScopeMatcher *SM = dyn_cast<ScopeMatcher>(M.second)) {
@@ -455,7 +455,7 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
     }
     return;
   }
-  
+
 
   // Reassemble the Scope node with the adjusted children.
   Scope->setNumChildren(NewOptionsToMatch.size());

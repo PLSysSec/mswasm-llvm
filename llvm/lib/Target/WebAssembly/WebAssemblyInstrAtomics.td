@@ -33,146 +33,113 @@ multiclass ATOMIC_NRI<dag oops, dag iops, list<dag> pattern, string asmstr = "",
 //===----------------------------------------------------------------------===//
 
 let hasSideEffects = 1 in {
-defm ATOMIC_NOTIFY_A32 :
+defm ATOMIC_NOTIFY_handle :
   ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset32_op:$off, I32:$addr, I32:$count),
+           (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr, I32:$count),
            (outs), (ins P2Align:$p2align, offset32_op:$off), [],
            "atomic.notify \t$dst, ${off}(${addr})${p2align}, $count",
            "atomic.notify \t${off}${p2align}", 0x00, "false">;
-defm ATOMIC_NOTIFY_A64 :
-  ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset64_op:$off, I64:$addr, I32:$count),
-           (outs), (ins P2Align:$p2align, offset64_op:$off), [],
-           "atomic.notify \t$dst, ${off}(${addr})${p2align}, $count",
-           "atomic.notify \t${off}${p2align}", 0x00, "true">;
 let mayLoad = 1 in {
-defm ATOMIC_WAIT_I32_A32 :
+defm ATOMIC_WAIT_I32_handle :
   ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset32_op:$off, I32:$addr, I32:$exp,
+           (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr, I32:$exp,
                 I64:$timeout),
            (outs), (ins P2Align:$p2align, offset32_op:$off), [],
            "i32.atomic.wait \t$dst, ${off}(${addr})${p2align}, $exp, $timeout",
            "i32.atomic.wait \t${off}${p2align}", 0x01, "false">;
-defm ATOMIC_WAIT_I32_A64 :
+defm ATOMIC_WAIT_I64_handle :
   ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset64_op:$off, I64:$addr, I32:$exp,
-                I64:$timeout),
-           (outs), (ins P2Align:$p2align, offset64_op:$off), [],
-           "i32.atomic.wait \t$dst, ${off}(${addr})${p2align}, $exp, $timeout",
-           "i32.atomic.wait \t${off}${p2align}", 0x01, "true">;
-defm ATOMIC_WAIT_I64_A32 :
-  ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset32_op:$off, I32:$addr, I64:$exp,
+           (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr, I64:$exp,
                 I64:$timeout),
            (outs), (ins P2Align:$p2align, offset32_op:$off), [],
            "i64.atomic.wait \t$dst, ${off}(${addr})${p2align}, $exp, $timeout",
            "i64.atomic.wait \t${off}${p2align}", 0x02, "false">;
-defm ATOMIC_WAIT_I64_A64 :
-  ATOMIC_I<(outs I32:$dst),
-           (ins P2Align:$p2align, offset64_op:$off, I64:$addr, I64:$exp,
-                I64:$timeout),
-           (outs), (ins P2Align:$p2align, offset64_op:$off), [],
-           "i64.atomic.wait \t$dst, ${off}(${addr})${p2align}, $exp, $timeout",
-           "i64.atomic.wait \t${off}${p2align}", 0x02, "true">;
 } // mayLoad = 1
 } // hasSideEffects = 1
 
-let Predicates = [HasAtomics] in {
 // Select notifys with no constant offset.
-def NotifyPatNoOffset_A32 :
-  Pat<(i32 (int_wasm_atomic_notify I32:$addr, I32:$count)),
-      (ATOMIC_NOTIFY_A32 0, 0, I32:$addr, I32:$count)>,
-  Requires<[HasAddr32]>;
-def NotifyPatNoOffset_A64 :
-  Pat<(i32 (int_wasm_atomic_notify I64:$addr, I32:$count)),
-      (ATOMIC_NOTIFY_A64 0, 0, I64:$addr, I32:$count)>,
-  Requires<[HasAddr64]>;
+def NotifyPatNoOffset_handle :
+  Pat<(i32 (int_wasm_atomic_notify HANDLE:$addr, I32:$count)),
+      (ATOMIC_NOTIFY_handle 0, 0, HANDLE:$addr, I32:$count)>,
+  Requires<[]>;
 
 // Select notifys with a constant offset.
 
 // Pattern with address + immediate offset
 multiclass NotifyPatImmOff<PatFrag operand, string inst> {
-  def : Pat<(i32 (int_wasm_atomic_notify (operand I32:$addr, imm:$off),
+  def : Pat<(i32 (int_wasm_atomic_notify (operand HANDLE:$addr, I32:$off),
                   I32:$count)),
-            (!cast<NI>(inst#_A32) 0, imm:$off, I32:$addr, I32:$count)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(i32 (int_wasm_atomic_notify (operand I64:$addr, imm:$off),
-                  I32:$count)),
-            (!cast<NI>(inst#_A64) 0, imm:$off, I64:$addr, I32:$count)>,
-        Requires<[HasAddr64]>;
+            (!cast<NI>(inst#_handle) 0, I32:$off, HANDLE:$addr, I32:$count)>,
+        Requires<[HasAtomics]>;
 }
-defm : NotifyPatImmOff<regPlusImm, "ATOMIC_NOTIFY">;
-defm : NotifyPatImmOff<or_is_add, "ATOMIC_NOTIFY">;
+defm : NotifyPatImmOff<addrPlusImm, "ATOMIC_NOTIFY">;
+//defm : NotifyPatImmOff<or_is_add, "ATOMIC_NOTIFY">;
 
 // Select notifys with just a constant offset.
+/*
 def NotifyPatOffsetOnly_A32 :
   Pat<(i32 (int_wasm_atomic_notify imm:$off, I32:$count)),
       (ATOMIC_NOTIFY_A32 0, imm:$off, (CONST_I32 0), I32:$count)>,
-  Requires<[HasAddr32]>;
+  Requires<[HasAddr32, HasAtomics]>;
 def NotifyPatOffsetOnly_A64 :
   Pat<(i32 (int_wasm_atomic_notify imm:$off, I32:$count)),
       (ATOMIC_NOTIFY_A64 0, imm:$off, (CONST_I64 0), I32:$count)>,
-  Requires<[HasAddr64]>;
+  Requires<[HasAddr64, HasAtomics]>;
 
 def NotifyPatGlobalAddrOffOnly_A32 :
   Pat<(i32 (int_wasm_atomic_notify (WebAssemblywrapper tglobaladdr:$off),
-                                   I32:$count)),
-      (ATOMIC_NOTIFY_A32 0, tglobaladdr:$off, (CONST_I32 0), I32:$count)>,
-  Requires<[HasAddr32]>;
+                                          I32:$count)),
+      (ATOMIC_NOTIFY_A32 0, tglobaladdr:$off, (CONST_I32 0), I32:$count)
+     >,
+  Requires<[HasAddr32, HasAtomics, IsNotPIC]>;
 def NotifyPatGlobalAddrOffOnly_A64 :
   Pat<(i32 (int_wasm_atomic_notify (WebAssemblywrapper tglobaladdr:$off),
-                                   I32:$count)),
-      (ATOMIC_NOTIFY_A64 0, tglobaladdr:$off, (CONST_I64 0), I32:$count)>,
-  Requires<[HasAddr64]>;
+                                          I32:$count)),
+      (ATOMIC_NOTIFY_A64 0, tglobaladdr:$off, (CONST_I64 0), I32:$count)
+     >,
+  Requires<[HasAddr64, HasAtomics, IsNotPIC]>;
+*/
 
 // Select waits with no constant offset.
 multiclass WaitPatNoOffset<ValueType ty, Intrinsic kind,
                       string inst> {
-  def : Pat<(i32 (kind I32:$addr, ty:$exp, I64:$timeout)),
-            (!cast<NI>(inst#_A32) 0, 0, I32:$addr, ty:$exp, I64:$timeout)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(i32 (kind I64:$addr, ty:$exp, I64:$timeout)),
-            (!cast<NI>(inst#_A64) 0, 0, I64:$addr, ty:$exp, I64:$timeout)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(i32 (kind HANDLE:$addr, ty:$exp, I64:$timeout)),
+            (!cast<NI>(inst#_handle) 0, 0, HANDLE:$addr, ty:$exp, I64:$timeout)>,
+        Requires<[HasAtomics]>;
 }
 defm : WaitPatNoOffset<i32, int_wasm_atomic_wait_i32, "ATOMIC_WAIT_I32">;
-defm : WaitPatNoOffset<i64, int_wasm_atomic_wait_i64, "ATOMIC_WAIT_I64">;
 defm : WaitPatNoOffset<i32, int_wasm_atomic_wait_i32, "ATOMIC_WAIT_I32">;
-defm : WaitPatNoOffset<i64, int_wasm_atomic_wait_i64, "ATOMIC_WAIT_I64">;
 
 // Select waits with a constant offset.
 
 // Pattern with address + immediate offset
 multiclass WaitPatImmOff<ValueType ty, Intrinsic kind, PatFrag operand,
                          string inst> {
-  def : Pat<(i32 (kind (operand I32:$addr, imm:$off), ty:$exp, I64:$timeout)),
-            (!cast<NI>(inst#_A32) 0, imm:$off, I32:$addr, ty:$exp,
+  def : Pat<(i32 (kind (operand HANDLE:$addr, I32:$off), ty:$exp, I64:$timeout)),
+            (!cast<NI>(inst#_handle) 0, I32:$off, HANDLE:$addr, ty:$exp,
               I64:$timeout)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(i32 (kind (operand I64:$addr, imm:$off), ty:$exp, I64:$timeout)),
-            (!cast<NI>(inst#_A64) 0, imm:$off, I64:$addr, ty:$exp,
-              I64:$timeout)>,
-        Requires<[HasAddr64]>;
+        Requires<[HasAtomics]>;
 }
-defm : WaitPatImmOff<i32, int_wasm_atomic_wait_i32, regPlusImm,
+defm : WaitPatImmOff<i32, int_wasm_atomic_wait_i32, addrPlusImm,
                      "ATOMIC_WAIT_I32">;
-defm : WaitPatImmOff<i32, int_wasm_atomic_wait_i32, or_is_add,
-                     "ATOMIC_WAIT_I32">;
-defm : WaitPatImmOff<i64, int_wasm_atomic_wait_i64, regPlusImm,
+//defm : WaitPatImmOff<i32, int_wasm_atomic_wait_i32, or_is_add,
+                     //"ATOMIC_WAIT_I32">;
+defm : WaitPatImmOff<i64, int_wasm_atomic_wait_i64, addrPlusImm,
                      "ATOMIC_WAIT_I64">;
-defm : WaitPatImmOff<i64, int_wasm_atomic_wait_i64, or_is_add,
-                     "ATOMIC_WAIT_I64">;
+//defm : WaitPatImmOff<i64, int_wasm_atomic_wait_i64, or_is_add,
+                     //"ATOMIC_WAIT_I64">;
 
-// Select wait_i32, "ATOMIC_WAIT_I32s with just a constant offset.
+// Select waits with just a constant offset.
+/*
 multiclass WaitPatOffsetOnly<ValueType ty, Intrinsic kind, string inst> {
   def : Pat<(i32 (kind imm:$off, ty:$exp, I64:$timeout)),
             (!cast<NI>(inst#_A32) 0, imm:$off, (CONST_I32 0), ty:$exp,
                I64:$timeout)>,
-        Requires<[HasAddr32]>;
+        Requires<[HasAddr32, HasAtomics]>;
   def : Pat<(i32 (kind imm:$off, ty:$exp, I64:$timeout)),
             (!cast<NI>(inst#_A64) 0, imm:$off, (CONST_I64 0), ty:$exp,
                I64:$timeout)>,
-        Requires<[HasAddr64]>;
+        Requires<[HasAddr64, HasAtomics]>;
 }
 defm : WaitPatOffsetOnly<i32, int_wasm_atomic_wait_i32, "ATOMIC_WAIT_I32">;
 defm : WaitPatOffsetOnly<i64, int_wasm_atomic_wait_i64, "ATOMIC_WAIT_I64">;
@@ -193,7 +160,7 @@ defm : WaitPatGlobalAddrOffOnly<i32, int_wasm_atomic_wait_i32,
                                 "ATOMIC_WAIT_I32">;
 defm : WaitPatGlobalAddrOffOnly<i64, int_wasm_atomic_wait_i64,
                                 "ATOMIC_WAIT_I64">;
-} // Predicates = [HasAtomics]
+*/
 
 //===----------------------------------------------------------------------===//
 // Atomic fences
@@ -228,17 +195,21 @@ defm : LoadPatNoOffset<i64, atomic_load_64, "ATOMIC_LOAD_I64">;
 // Select loads with a constant offset.
 
 // Pattern with address + immediate offset
-defm : LoadPatImmOff<i32, atomic_load_32, regPlusImm, "ATOMIC_LOAD_I32">;
-defm : LoadPatImmOff<i64, atomic_load_64, regPlusImm, "ATOMIC_LOAD_I64">;
+defm : LoadPatImmOff<i32, atomic_load_32, addrPlusImm, "ATOMIC_LOAD_I32">;
+defm : LoadPatImmOff<i64, atomic_load_64, addrPlusImm, "ATOMIC_LOAD_I64">;
+/*
 defm : LoadPatImmOff<i32, atomic_load_32, or_is_add, "ATOMIC_LOAD_I32">;
 defm : LoadPatImmOff<i64, atomic_load_64, or_is_add, "ATOMIC_LOAD_I64">;
+*/
 
 // Select loads with just a constant offset.
+/*
 defm : LoadPatOffsetOnly<i32, atomic_load_32, "ATOMIC_LOAD_I32">;
 defm : LoadPatOffsetOnly<i64, atomic_load_64, "ATOMIC_LOAD_I64">;
 
 defm : LoadPatGlobalAddrOffOnly<i32, atomic_load_32, "ATOMIC_LOAD_I32">;
 defm : LoadPatGlobalAddrOffOnly<i64, atomic_load_64, "ATOMIC_LOAD_I64">;
+*/
 
 } // Predicates = [HasAtomics]
 
@@ -301,29 +272,38 @@ defm : LoadPatNoOffset<i64, sext_aload_16_64, "ATOMIC_LOAD16_U_I64">;
 // 32->64 sext load gets selected as i32.atomic.load, i64.extend_i32_s
 
 // Zero-extending loads with constant offset
-defm : LoadPatImmOff<i32, zext_aload_8_32, regPlusImm, "ATOMIC_LOAD8_U_I32">;
-defm : LoadPatImmOff<i32, zext_aload_16_32, regPlusImm, "ATOMIC_LOAD16_U_I32">;
+defm : LoadPatImmOff<i32, zext_aload_8_32, addrPlusImm, "ATOMIC_LOAD8_U_I32">;
+defm : LoadPatImmOff<i32, zext_aload_16_32, addrPlusImm, "ATOMIC_LOAD16_U_I32">;
+/*
 defm : LoadPatImmOff<i32, zext_aload_8_32, or_is_add, "ATOMIC_LOAD8_U_I32">;
 defm : LoadPatImmOff<i32, zext_aload_16_32, or_is_add, "ATOMIC_LOAD16_U_I32">;
-defm : LoadPatImmOff<i64, zext_aload_8_64, regPlusImm, "ATOMIC_LOAD8_U_I64">;
-defm : LoadPatImmOff<i64, zext_aload_16_64, regPlusImm, "ATOMIC_LOAD16_U_I64">;
-defm : LoadPatImmOff<i64, zext_aload_32_64, regPlusImm, "ATOMIC_LOAD32_U_I64">;
+*/
+defm : LoadPatImmOff<i64, zext_aload_8_64, addrPlusImm, "ATOMIC_LOAD8_U_I64">;
+defm : LoadPatImmOff<i64, zext_aload_16_64, addrPlusImm, "ATOMIC_LOAD16_U_I64">;
+defm : LoadPatImmOff<i64, zext_aload_32_64, addrPlusImm, "ATOMIC_LOAD32_U_I64">;
+/*
 defm : LoadPatImmOff<i64, zext_aload_8_64, or_is_add, "ATOMIC_LOAD8_U_I64">;
 defm : LoadPatImmOff<i64, zext_aload_16_64, or_is_add, "ATOMIC_LOAD16_U_I64">;
 defm : LoadPatImmOff<i64, zext_aload_32_64, or_is_add, "ATOMIC_LOAD32_U_I64">;
+*/
 
 // Sign-extending loads with constant offset
-defm : LoadPatImmOff<i32, atomic_load_8, regPlusImm, "ATOMIC_LOAD8_U_I32">;
-defm : LoadPatImmOff<i32, atomic_load_16, regPlusImm, "ATOMIC_LOAD16_U_I32">;
+defm : LoadPatImmOff<i32, atomic_load_8, addrPlusImm, "ATOMIC_LOAD8_U_I32">;
+defm : LoadPatImmOff<i32, atomic_load_16, addrPlusImm, "ATOMIC_LOAD16_U_I32">;
+/*
 defm : LoadPatImmOff<i32, atomic_load_8, or_is_add, "ATOMIC_LOAD8_U_I32">;
 defm : LoadPatImmOff<i32, atomic_load_16, or_is_add, "ATOMIC_LOAD16_U_I32">;
-defm : LoadPatImmOff<i64, sext_aload_8_64, regPlusImm, "ATOMIC_LOAD8_U_I64">;
-defm : LoadPatImmOff<i64, sext_aload_16_64, regPlusImm, "ATOMIC_LOAD16_U_I64">;
+*/
+defm : LoadPatImmOff<i64, sext_aload_8_64, addrPlusImm, "ATOMIC_LOAD8_U_I64">;
+defm : LoadPatImmOff<i64, sext_aload_16_64, addrPlusImm, "ATOMIC_LOAD16_U_I64">;
+/*
 defm : LoadPatImmOff<i64, sext_aload_8_64, or_is_add, "ATOMIC_LOAD8_U_I64">;
 defm : LoadPatImmOff<i64, sext_aload_16_64, or_is_add, "ATOMIC_LOAD16_U_I64">;
+*/
 // No 32->64 patterns, just use i32.atomic.load and i64.extend_s/i64
 
 // Extending loads with just a constant offset
+/*
 defm : LoadPatOffsetOnly<i32, zext_aload_8_32, "ATOMIC_LOAD8_U_I32">;
 defm : LoadPatOffsetOnly<i32, zext_aload_16_32, "ATOMIC_LOAD16_U_I32">;
 defm : LoadPatOffsetOnly<i64, zext_aload_8_64, "ATOMIC_LOAD8_U_I64">;
@@ -343,6 +323,7 @@ defm : LoadPatGlobalAddrOffOnly<i32, atomic_load_8, "ATOMIC_LOAD8_U_I32">;
 defm : LoadPatGlobalAddrOffOnly<i32, atomic_load_16, "ATOMIC_LOAD16_U_I32">;
 defm : LoadPatGlobalAddrOffOnly<i64, sext_aload_8_64, "ATOMIC_LOAD8_U_I64">;
 defm : LoadPatGlobalAddrOffOnly<i64, sext_aload_16_64, "ATOMIC_LOAD16_U_I64">;
+*/
 
 } // Predicates = [HasAtomics]
 
@@ -367,12 +348,9 @@ let Predicates = [HasAtomics] in {
 
 // Select stores with no constant offset.
 multiclass AStorePatNoOffset<ValueType ty, PatFrag kind, string inst> {
-  def : Pat<(kind I32:$addr, ty:$val),
-            (!cast<NI>(inst#_A32) 0, 0, I32:$addr, ty:$val)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(kind I64:$addr, ty:$val),
-            (!cast<NI>(inst#_A64) 0, 0, I64:$addr, ty:$val)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(kind HANDLE:$addr, ty:$val),
+            (!cast<NI>(inst#_handle) 0, 0, HANDLE:$addr, ty:$val)>,
+        Requires<[HasAtomics]>;
 }
 defm : AStorePatNoOffset<i32, atomic_store_32, "ATOMIC_STORE_I32">;
 defm : AStorePatNoOffset<i64, atomic_store_64, "ATOMIC_STORE_I64">;
@@ -382,38 +360,37 @@ defm : AStorePatNoOffset<i64, atomic_store_64, "ATOMIC_STORE_I64">;
 // Pattern with address + immediate offset
 multiclass AStorePatImmOff<ValueType ty, PatFrag kind, PatFrag operand,
                            string inst> {
-  def : Pat<(kind (operand I32:$addr, imm:$off), ty:$val),
-            (!cast<NI>(inst#_A32) 0, imm:$off, I32:$addr, ty:$val)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(kind (operand I64:$addr, imm:$off), ty:$val),
-            (!cast<NI>(inst#_A64) 0, imm:$off, I64:$addr, ty:$val)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(kind (operand HANDLE:$addr, I32:$off), ty:$val),
+            (!cast<NI>(inst#_handle) 0, I32:$off, HANDLE:$addr, ty:$val)>,
+        Requires<[HasAtomics]>;
 }
-defm : AStorePatImmOff<i32, atomic_store_32, regPlusImm, "ATOMIC_STORE_I32">;
-defm : AStorePatImmOff<i64, atomic_store_64, regPlusImm, "ATOMIC_STORE_I64">;
+defm : AStorePatImmOff<i32, atomic_store_32, addrPlusImm, "ATOMIC_STORE_I32">;
+defm : AStorePatImmOff<i64, atomic_store_64, addrPlusImm, "ATOMIC_STORE_I64">;
 
 // Select stores with just a constant offset.
+/*
 multiclass AStorePatOffsetOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(kind imm:$off, ty:$val),
-            (!cast<NI>(inst#_A32) 0, imm:$off, (CONST_I32 0), ty:$val)>,
-        Requires<[HasAddr32]>;
+            (!cast<NI>(inst#_handle) 0, imm:$off, (CONST_I32 0), ty:$val)>,
+        Requires<[HasAddr32, HasAtomics]>;
   def : Pat<(kind imm:$off, ty:$val),
             (!cast<NI>(inst#_A64) 0, imm:$off, (CONST_I64 0), ty:$val)>,
-        Requires<[HasAddr64]>;
+        Requires<[HasAddr64, HasAtomics]>;
 }
 defm : AStorePatOffsetOnly<i32, atomic_store_32, "ATOMIC_STORE_I32">;
 defm : AStorePatOffsetOnly<i64, atomic_store_64, "ATOMIC_STORE_I64">;
 
 multiclass AStorePatGlobalAddrOffOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(kind (WebAssemblywrapper tglobaladdr:$off), ty:$val),
-            (!cast<NI>(inst#_A32) 0, tglobaladdr:$off, (CONST_I32 0), ty:$val)>,
-        Requires<[HasAddr32]>;
+            (!cast<NI>(inst#_handle) 0, tglobaladdr:$off, (CONST_I32 0), ty:$val)>,
+        Requires<[HasAddr32, HasAtomics, IsNotPIC]>;
   def : Pat<(kind (WebAssemblywrapper tglobaladdr:$off), ty:$val),
             (!cast<NI>(inst#_A64) 0, tglobaladdr:$off, (CONST_I64 0), ty:$val)>,
         Requires<[HasAddr64]>;
 }
 defm : AStorePatGlobalAddrOffOnly<i32, atomic_store_32, "ATOMIC_STORE_I32">;
 defm : AStorePatGlobalAddrOffOnly<i64, atomic_store_64, "ATOMIC_STORE_I64">;
+*/
 
 } // Predicates = [HasAtomics]
 
@@ -446,13 +423,14 @@ defm : AStorePatNoOffset<i64, trunc_astore_16_64, "ATOMIC_STORE16_I64">;
 defm : AStorePatNoOffset<i64, trunc_astore_32_64, "ATOMIC_STORE32_I64">;
 
 // Truncating stores with a constant offset
-defm : AStorePatImmOff<i32, atomic_store_8, regPlusImm, "ATOMIC_STORE8_I32">;
-defm : AStorePatImmOff<i32, atomic_store_16, regPlusImm, "ATOMIC_STORE16_I32">;
-defm : AStorePatImmOff<i64, trunc_astore_8_64, regPlusImm, "ATOMIC_STORE8_I64">;
-defm : AStorePatImmOff<i64, trunc_astore_16_64, regPlusImm,
+defm : AStorePatImmOff<i32, atomic_store_8, addrPlusImm, "ATOMIC_STORE8_I32">;
+defm : AStorePatImmOff<i32, atomic_store_16, addrPlusImm, "ATOMIC_STORE16_I32">;
+defm : AStorePatImmOff<i64, trunc_astore_8_64, addrPlusImm, "ATOMIC_STORE8_I64">;
+defm : AStorePatImmOff<i64, trunc_astore_16_64, addrPlusImm,
                        "ATOMIC_STORE16_I64">;
-defm : AStorePatImmOff<i64, trunc_astore_32_64, regPlusImm,
+defm : AStorePatImmOff<i64, trunc_astore_32_64, addrPlusImm,
                        "ATOMIC_STORE32_I64">;
+/*
 defm : AStorePatImmOff<i32, atomic_store_8, or_is_add, "ATOMIC_STORE8_I32">;
 defm : AStorePatImmOff<i32, atomic_store_16, or_is_add, "ATOMIC_STORE16_I32">;
 defm : AStorePatImmOff<i64, trunc_astore_8_64, or_is_add, "ATOMIC_STORE8_I64">;
@@ -460,8 +438,10 @@ defm : AStorePatImmOff<i64, trunc_astore_16_64, or_is_add,
                        "ATOMIC_STORE16_I64">;
 defm : AStorePatImmOff<i64, trunc_astore_32_64, or_is_add,
                        "ATOMIC_STORE32_I64">;
+*/
 
 // Truncating stores with just a constant offset
+/*
 defm : AStorePatOffsetOnly<i32, atomic_store_8, "ATOMIC_STORE8_I32">;
 defm : AStorePatOffsetOnly<i32, atomic_store_16, "ATOMIC_STORE16_I32">;
 defm : AStorePatOffsetOnly<i64, trunc_astore_8_64, "ATOMIC_STORE8_I64">;
@@ -473,6 +453,7 @@ defm : AStorePatGlobalAddrOffOnly<i32, atomic_store_16, "ATOMIC_STORE16_I32">;
 defm : AStorePatGlobalAddrOffOnly<i64, trunc_astore_8_64, "ATOMIC_STORE8_I64">;
 defm : AStorePatGlobalAddrOffOnly<i64, trunc_astore_16_64, "ATOMIC_STORE16_I64">;
 defm : AStorePatGlobalAddrOffOnly<i64, trunc_astore_32_64, "ATOMIC_STORE32_I64">;
+*/
 
 } // Predicates = [HasAtomics]
 
@@ -482,18 +463,12 @@ defm : AStorePatGlobalAddrOffOnly<i64, trunc_astore_32_64, "ATOMIC_STORE32_I64">
 
 multiclass WebAssemblyBinRMW<WebAssemblyRegClass rc, string name,
                              int atomic_op> {
-  defm "_A32" :
+  defm "_handle" :
     ATOMIC_I<(outs rc:$dst),
-             (ins P2Align:$p2align, offset32_op:$off, I32:$addr, rc:$val),
+             (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr, rc:$val),
              (outs), (ins P2Align:$p2align, offset32_op:$off), [],
              !strconcat(name, "\t$dst, ${off}(${addr})${p2align}, $val"),
              !strconcat(name, "\t${off}${p2align}"), atomic_op, "false">;
-  defm "_A64" :
-    ATOMIC_I<(outs rc:$dst),
-             (ins P2Align:$p2align, offset64_op:$off, I64:$addr, rc:$val),
-             (outs), (ins P2Align:$p2align, offset64_op:$off), [],
-             !strconcat(name, "\t$dst, ${off}(${addr})${p2align}, $val"),
-             !strconcat(name, "\t${off}${p2align}"), atomic_op, "true">;
 }
 
 defm ATOMIC_RMW_ADD_I32 : WebAssemblyBinRMW<I32, "i32.atomic.rmw.add", 0x1e>;
@@ -578,12 +553,9 @@ defm ATOMIC_RMW32_U_XCHG_I64 :
 
 // Select binary RMWs with no constant offset.
 multiclass BinRMWPatNoOffset<ValueType ty, PatFrag kind, string inst> {
-  def : Pat<(ty (kind I32:$addr, ty:$val)),
-            (!cast<NI>(inst#_A32) 0, 0, I32:$addr, ty:$val)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(ty (kind I64:$addr, ty:$val)),
-            (!cast<NI>(inst#_A64) 0, 0, I64:$addr, ty:$val)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(ty (kind HANDLE:$addr, ty:$val)),
+            (!cast<NI>(inst#_handle) 0, 0, HANDLE:$addr, ty:$val)>,
+        Requires<[HasAtomics]>;
 }
 
 // Select binary RMWs with a constant offset.
@@ -591,15 +563,13 @@ multiclass BinRMWPatNoOffset<ValueType ty, PatFrag kind, string inst> {
 // Pattern with address + immediate offset
 multiclass BinRMWPatImmOff<ValueType ty, PatFrag kind, PatFrag operand,
                            string inst> {
-  def : Pat<(ty (kind (operand I32:$addr, imm:$off), ty:$val)),
-            (!cast<NI>(inst#_A32) 0, imm:$off, I32:$addr, ty:$val)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(ty (kind (operand I64:$addr, imm:$off), ty:$val)),
-            (!cast<NI>(inst#_A64) 0, imm:$off, I64:$addr, ty:$val)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(ty (kind (operand HANDLE:$addr, I32:$off), ty:$val)),
+            (!cast<NI>(inst#_handle) 0, I32:$off, HANDLE:$addr, ty:$val)>,
+        Requires<[HasAtomics]>;
 }
 
 // Select binary RMWs with just a constant offset.
+/*
 multiclass BinRMWPatOffsetOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(ty (kind imm:$off, ty:$val)),
             (!cast<NI>(inst#_A32) 0, imm:$off, (CONST_I32 0), ty:$val)>,
@@ -617,6 +587,7 @@ multiclass BinRMWPatGlobalAddrOffOnly<ValueType ty, PatFrag kind, NI inst> {
             (!cast<NI>(inst#_A64) 0, tglobaladdr:$off, (CONST_I64 0), ty:$val)>,
         Requires<[HasAddr64]>;
 }
+*/
 
 // Patterns for various addressing modes.
 multiclass BinRMWPattern<PatFrag rmw_32, PatFrag rmw_64, string inst_32,
@@ -624,16 +595,20 @@ multiclass BinRMWPattern<PatFrag rmw_32, PatFrag rmw_64, string inst_32,
   defm : BinRMWPatNoOffset<i32, rmw_32, inst_32>;
   defm : BinRMWPatNoOffset<i64, rmw_64, inst_64>;
 
-  defm : BinRMWPatImmOff<i32, rmw_32, regPlusImm, inst_32>;
-  defm : BinRMWPatImmOff<i64, rmw_64, regPlusImm, inst_64>;
+  defm : BinRMWPatImmOff<i32, rmw_32, addrPlusImm, inst_32>;
+  defm : BinRMWPatImmOff<i64, rmw_64, addrPlusImm, inst_64>;
+  /*
   defm : BinRMWPatImmOff<i32, rmw_32, or_is_add, inst_32>;
   defm : BinRMWPatImmOff<i64, rmw_64, or_is_add, inst_64>;
+  */
 
+  /*
   defm : BinRMWPatOffsetOnly<i32, rmw_32, inst_32>;
   defm : BinRMWPatOffsetOnly<i64, rmw_64, inst_64>;
 
   defm : BinRMWPatGlobalAddrOffOnly<i32, rmw_32, inst_32>;
   defm : BinRMWPatGlobalAddrOffOnly<i64, rmw_64, inst_64>;
+  */
 }
 
 let Predicates = [HasAtomics] in {
@@ -703,32 +678,37 @@ multiclass BinRMWTruncExtPattern<
   defm : BinRMWPatNoOffset<i64, sext_bin_rmw_16_64<rmw_16>, inst16_64>;
 
   // Truncating-extending binary RMWs with a constant offset
-  defm : BinRMWPatImmOff<i32, zext_bin_rmw_8_32<rmw_8>, regPlusImm, inst8_32>;
-  defm : BinRMWPatImmOff<i32, zext_bin_rmw_16_32<rmw_16>, regPlusImm,
+  defm : BinRMWPatImmOff<i32, zext_bin_rmw_8_32<rmw_8>, addrPlusImm, inst8_32>;
+  defm : BinRMWPatImmOff<i32, zext_bin_rmw_16_32<rmw_16>, addrPlusImm,
                          inst16_32>;
-  defm : BinRMWPatImmOff<i64, zext_bin_rmw_8_64<rmw_8>, regPlusImm, inst8_64>;
-  defm : BinRMWPatImmOff<i64, zext_bin_rmw_16_64<rmw_16>, regPlusImm,
+  defm : BinRMWPatImmOff<i64, zext_bin_rmw_8_64<rmw_8>, addrPlusImm, inst8_64>;
+  defm : BinRMWPatImmOff<i64, zext_bin_rmw_16_64<rmw_16>, addrPlusImm,
                          inst16_64>;
-  defm : BinRMWPatImmOff<i64, zext_bin_rmw_32_64<rmw_32>, regPlusImm,
+  defm : BinRMWPatImmOff<i64, zext_bin_rmw_32_64<rmw_32>, addrPlusImm,
                          inst32_64>;
+/*
   defm : BinRMWPatImmOff<i32, zext_bin_rmw_8_32<rmw_8>, or_is_add, inst8_32>;
   defm : BinRMWPatImmOff<i32, zext_bin_rmw_16_32<rmw_16>, or_is_add, inst16_32>;
   defm : BinRMWPatImmOff<i64, zext_bin_rmw_8_64<rmw_8>, or_is_add, inst8_64>;
   defm : BinRMWPatImmOff<i64, zext_bin_rmw_16_64<rmw_16>, or_is_add, inst16_64>;
   defm : BinRMWPatImmOff<i64, zext_bin_rmw_32_64<rmw_32>, or_is_add, inst32_64>;
+*/
 
-  defm : BinRMWPatImmOff<i32, sext_bin_rmw_8_32<rmw_8>, regPlusImm, inst8_32>;
-  defm : BinRMWPatImmOff<i32, sext_bin_rmw_16_32<rmw_16>, regPlusImm,
+  defm : BinRMWPatImmOff<i32, sext_bin_rmw_8_32<rmw_8>, addrPlusImm, inst8_32>;
+  defm : BinRMWPatImmOff<i32, sext_bin_rmw_16_32<rmw_16>, addrPlusImm,
                          inst16_32>;
-  defm : BinRMWPatImmOff<i64, sext_bin_rmw_8_64<rmw_8>, regPlusImm, inst8_64>;
-  defm : BinRMWPatImmOff<i64, sext_bin_rmw_16_64<rmw_16>, regPlusImm,
+  defm : BinRMWPatImmOff<i64, sext_bin_rmw_8_64<rmw_8>, addrPlusImm, inst8_64>;
+  defm : BinRMWPatImmOff<i64, sext_bin_rmw_16_64<rmw_16>, addrPlusImm,
                          inst16_64>;
+/*
   defm : BinRMWPatImmOff<i32, sext_bin_rmw_8_32<rmw_8>, or_is_add, inst8_32>;
   defm : BinRMWPatImmOff<i32, sext_bin_rmw_16_32<rmw_16>, or_is_add, inst16_32>;
   defm : BinRMWPatImmOff<i64, sext_bin_rmw_8_64<rmw_8>, or_is_add, inst8_64>;
   defm : BinRMWPatImmOff<i64, sext_bin_rmw_16_64<rmw_16>, or_is_add, inst16_64>;
+*/
 
   // Truncating-extending binary RMWs with just a constant offset
+  /*
   defm : BinRMWPatOffsetOnly<i32, zext_bin_rmw_8_32<rmw_8>, inst8_32>;
   defm : BinRMWPatOffsetOnly<i32, zext_bin_rmw_16_32<rmw_16>, inst16_32>;
   defm : BinRMWPatOffsetOnly<i64, zext_bin_rmw_8_64<rmw_8>, inst8_64>;
@@ -750,6 +730,7 @@ multiclass BinRMWTruncExtPattern<
   defm : BinRMWPatGlobalAddrOffOnly<i32, sext_bin_rmw_16_32<rmw_16>, inst16_32>;
   defm : BinRMWPatGlobalAddrOffOnly<i64, sext_bin_rmw_8_64<rmw_8>, inst8_64>;
   defm : BinRMWPatGlobalAddrOffOnly<i64, sext_bin_rmw_16_64<rmw_16>, inst16_64>;
+  */
 }
 
 let Predicates = [HasAtomics] in {
@@ -792,20 +773,13 @@ defm : BinRMWTruncExtPattern<
 
 multiclass WebAssemblyTerRMW<WebAssemblyRegClass rc, string name,
                              int atomic_op> {
-  defm "_A32" :
+  defm "_handle" :
     ATOMIC_I<(outs rc:$dst),
-             (ins P2Align:$p2align, offset32_op:$off, I32:$addr, rc:$exp,
+             (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr, rc:$exp,
                   rc:$new_),
              (outs), (ins P2Align:$p2align, offset32_op:$off), [],
              !strconcat(name, "\t$dst, ${off}(${addr})${p2align}, $exp, $new_"),
              !strconcat(name, "\t${off}${p2align}"), atomic_op, "false">;
-  defm "_A64" :
-    ATOMIC_I<(outs rc:$dst),
-             (ins P2Align:$p2align, offset64_op:$off, I64:$addr, rc:$exp,
-                  rc:$new_),
-             (outs), (ins P2Align:$p2align, offset64_op:$off), [],
-             !strconcat(name, "\t$dst, ${off}(${addr})${p2align}, $exp, $new_"),
-             !strconcat(name, "\t${off}${p2align}"), atomic_op, "true">;
 }
 
 defm ATOMIC_RMW_CMPXCHG_I32 :
@@ -825,12 +799,9 @@ defm ATOMIC_RMW32_U_CMPXCHG_I64 :
 
 // Select ternary RMWs with no constant offset.
 multiclass TerRMWPatNoOffset<ValueType ty, PatFrag kind, string inst> {
-  def : Pat<(ty (kind I32:$addr, ty:$exp, ty:$new)),
-            (!cast<NI>(inst#_A32) 0, 0, I32:$addr, ty:$exp, ty:$new)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(ty (kind I64:$addr, ty:$exp, ty:$new)),
-            (!cast<NI>(inst#_A64) 0, 0, I64:$addr, ty:$exp, ty:$new)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(ty (kind HANDLE:$addr, ty:$exp, ty:$new)),
+            (!cast<NI>(inst#_handle) 0, 0, HANDLE:$addr, ty:$exp, ty:$new)>,
+        Requires<[HasAtomics]>;
 }
 
 // Select ternary RMWs with a constant offset.
@@ -838,15 +809,13 @@ multiclass TerRMWPatNoOffset<ValueType ty, PatFrag kind, string inst> {
 // Pattern with address + immediate offset
 multiclass TerRMWPatImmOff<ValueType ty, PatFrag kind, PatFrag operand,
                            string inst> {
-  def : Pat<(ty (kind (operand I32:$addr, imm:$off), ty:$exp, ty:$new)),
-            (!cast<NI>(inst#_A32) 0, imm:$off, I32:$addr, ty:$exp, ty:$new)>,
-        Requires<[HasAddr32]>;
-  def : Pat<(ty (kind (operand I64:$addr, imm:$off), ty:$exp, ty:$new)),
-            (!cast<NI>(inst#_A64) 0, imm:$off, I64:$addr, ty:$exp, ty:$new)>,
-        Requires<[HasAddr64]>;
+  def : Pat<(ty (kind (operand HANDLE:$addr, I32:$off), ty:$exp, ty:$new)),
+            (!cast<NI>(inst#_handle) 0, I32:$off, HANDLE:$addr, ty:$exp, ty:$new)>,
+        Requires<[HasAtomics]>;
 }
 
 // Select ternary RMWs with just a constant offset.
+/*
 multiclass TerRMWPatOffsetOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(ty (kind imm:$off, ty:$exp, ty:$new)),
             (!cast<NI>(inst#_A32) 0, imm:$off, (CONST_I32 0), ty:$exp,
@@ -860,12 +829,13 @@ multiclass TerRMWPatGlobalAddrOffOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(ty (kind (WebAssemblywrapper tglobaladdr:$off), ty:$exp, ty:$new)),
             (!cast<NI>(inst#_A32) 0, tglobaladdr:$off, (CONST_I32 0), ty:$exp,
               ty:$new)>,
-        Requires<[HasAddr32]>;
+        Requires<[HasAddr32, HasAtomics, IsNotPIC]>;
   def : Pat<(ty (kind (WebAssemblywrapper tglobaladdr:$off), ty:$exp, ty:$new)),
             (!cast<NI>(inst#_A64) 0, tglobaladdr:$off, (CONST_I64 0), ty:$exp,
               ty:$new)>,
-        Requires<[HasAddr64]>;
+        Requires<[HasAddr64, HasAtomics, IsNotPIC]>;
 }
+*/
 
 // Patterns for various addressing modes.
 multiclass TerRMWPattern<PatFrag rmw_32, PatFrag rmw_64, string inst_32,
@@ -873,16 +843,20 @@ multiclass TerRMWPattern<PatFrag rmw_32, PatFrag rmw_64, string inst_32,
   defm : TerRMWPatNoOffset<i32, rmw_32, inst_32>;
   defm : TerRMWPatNoOffset<i64, rmw_64, inst_64>;
 
-  defm : TerRMWPatImmOff<i32, rmw_32, regPlusImm, inst_32>;
-  defm : TerRMWPatImmOff<i64, rmw_64, regPlusImm, inst_64>;
+  defm : TerRMWPatImmOff<i32, rmw_32, addrPlusImm, inst_32>;
+  defm : TerRMWPatImmOff<i64, rmw_64, addrPlusImm, inst_64>;
+/*
   defm : TerRMWPatImmOff<i32, rmw_32, or_is_add, inst_32>;
   defm : TerRMWPatImmOff<i64, rmw_64, or_is_add, inst_64>;
+*/
 
+  /*
   defm : TerRMWPatOffsetOnly<i32, rmw_32, inst_32>;
   defm : TerRMWPatOffsetOnly<i64, rmw_64, inst_64>;
 
   defm : TerRMWPatGlobalAddrOffOnly<i32, rmw_32, inst_32>;
   defm : TerRMWPatGlobalAddrOffOnly<i64, rmw_64, inst_64>;
+  */
 }
 
 let Predicates = [HasAtomics] in
@@ -945,32 +919,37 @@ multiclass TerRMWTruncExtPattern<
   defm : TerRMWPatNoOffset<i64, sext_ter_rmw_16_64<rmw_16>, inst16_64>;
 
   // Truncating-extending ternary RMWs with a constant offset
-  defm : TerRMWPatImmOff<i32, zext_ter_rmw_8_32<rmw_8>, regPlusImm, inst8_32>;
-  defm : TerRMWPatImmOff<i32, zext_ter_rmw_16_32<rmw_16>, regPlusImm,
+  defm : TerRMWPatImmOff<i32, zext_ter_rmw_8_32<rmw_8>, addrPlusImm, inst8_32>;
+  defm : TerRMWPatImmOff<i32, zext_ter_rmw_16_32<rmw_16>, addrPlusImm,
                          inst16_32>;
-  defm : TerRMWPatImmOff<i64, zext_ter_rmw_8_64<rmw_8>, regPlusImm, inst8_64>;
-  defm : TerRMWPatImmOff<i64, zext_ter_rmw_16_64<rmw_16>, regPlusImm,
+  defm : TerRMWPatImmOff<i64, zext_ter_rmw_8_64<rmw_8>, addrPlusImm, inst8_64>;
+  defm : TerRMWPatImmOff<i64, zext_ter_rmw_16_64<rmw_16>, addrPlusImm,
                          inst16_64>;
-  defm : TerRMWPatImmOff<i64, zext_ter_rmw_32_64<rmw_32>, regPlusImm,
+  defm : TerRMWPatImmOff<i64, zext_ter_rmw_32_64<rmw_32>, addrPlusImm,
                          inst32_64>;
+  /*
   defm : TerRMWPatImmOff<i32, zext_ter_rmw_8_32<rmw_8>, or_is_add, inst8_32>;
   defm : TerRMWPatImmOff<i32, zext_ter_rmw_16_32<rmw_16>, or_is_add, inst16_32>;
   defm : TerRMWPatImmOff<i64, zext_ter_rmw_8_64<rmw_8>, or_is_add, inst8_64>;
   defm : TerRMWPatImmOff<i64, zext_ter_rmw_16_64<rmw_16>, or_is_add, inst16_64>;
   defm : TerRMWPatImmOff<i64, zext_ter_rmw_32_64<rmw_32>, or_is_add, inst32_64>;
+  */
 
-  defm : TerRMWPatImmOff<i32, sext_ter_rmw_8_32<rmw_8>, regPlusImm, inst8_32>;
-  defm : TerRMWPatImmOff<i32, sext_ter_rmw_16_32<rmw_16>, regPlusImm,
+  defm : TerRMWPatImmOff<i32, sext_ter_rmw_8_32<rmw_8>, addrPlusImm, inst8_32>;
+  defm : TerRMWPatImmOff<i32, sext_ter_rmw_16_32<rmw_16>, addrPlusImm,
                          inst16_32>;
-  defm : TerRMWPatImmOff<i64, sext_ter_rmw_8_64<rmw_8>, regPlusImm, inst8_64>;
-  defm : TerRMWPatImmOff<i64, sext_ter_rmw_16_64<rmw_16>, regPlusImm,
+  defm : TerRMWPatImmOff<i64, sext_ter_rmw_8_64<rmw_8>, addrPlusImm, inst8_64>;
+  defm : TerRMWPatImmOff<i64, sext_ter_rmw_16_64<rmw_16>, addrPlusImm,
                          inst16_64>;
+  /*
   defm : TerRMWPatImmOff<i32, sext_ter_rmw_8_32<rmw_8>, or_is_add, inst8_32>;
   defm : TerRMWPatImmOff<i32, sext_ter_rmw_16_32<rmw_16>, or_is_add, inst16_32>;
   defm : TerRMWPatImmOff<i64, sext_ter_rmw_8_64<rmw_8>, or_is_add, inst8_64>;
   defm : TerRMWPatImmOff<i64, sext_ter_rmw_16_64<rmw_16>, or_is_add, inst16_64>;
+  */
 
   // Truncating-extending ternary RMWs with just a constant offset
+  /*
   defm : TerRMWPatOffsetOnly<i32, zext_ter_rmw_8_32<rmw_8>, inst8_32>;
   defm : TerRMWPatOffsetOnly<i32, zext_ter_rmw_16_32<rmw_16>, inst16_32>;
   defm : TerRMWPatOffsetOnly<i64, zext_ter_rmw_8_64<rmw_8>, inst8_64>;
@@ -992,6 +971,7 @@ multiclass TerRMWTruncExtPattern<
   defm : TerRMWPatGlobalAddrOffOnly<i32, sext_ter_rmw_16_32<rmw_16>, inst16_32>;
   defm : TerRMWPatGlobalAddrOffOnly<i64, sext_ter_rmw_8_64<rmw_8>, inst8_64>;
   defm : TerRMWPatGlobalAddrOffOnly<i64, sext_ter_rmw_16_64<rmw_16>, inst16_64>;
+  */
 }
 
 let Predicates = [HasAtomics] in

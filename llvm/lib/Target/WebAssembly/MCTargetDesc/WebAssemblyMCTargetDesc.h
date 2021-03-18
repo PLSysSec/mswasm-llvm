@@ -52,6 +52,8 @@ enum OperandType {
   OPERAND_F32IMM,
   /// 64-bit floating-point immediates.
   OPERAND_F64IMM,
+  /// MS-Wasm handle.
+  OPERAND_HANDLE,
   /// 8-bit vector lane immediate
   OPERAND_VEC_I8IMM,
   /// 16-bit vector lane immediate
@@ -128,6 +130,7 @@ enum class BlockType : unsigned {
   I64 = unsigned(wasm::ValType::I64),
   F32 = unsigned(wasm::ValType::F32),
   F64 = unsigned(wasm::ValType::F64),
+  Handle = unsigned(wasm::ValType::HANDLE),
   V128 = unsigned(wasm::ValType::V128),
   Exnref = unsigned(wasm::ValType::EXNREF),
   // Multivalue blocks (and other non-void blocks) are only emitted when the
@@ -148,10 +151,8 @@ wasm::ValType toValType(const MVT &Ty);
 inline unsigned GetDefaultP2AlignAny(unsigned Opc) {
   switch (Opc) {
 #define WASM_LOAD_STORE(NAME) \
-  case WebAssembly::NAME##_A32: \
-  case WebAssembly::NAME##_A64: \
-  case WebAssembly::NAME##_A32_S: \
-  case WebAssembly::NAME##_A64_S:
+  case WebAssembly::NAME##_handle: \
+  case WebAssembly::NAME##_handle_S:
   WASM_LOAD_STORE(LOAD8_S_I32)
   WASM_LOAD_STORE(LOAD8_U_I32)
   WASM_LOAD_STORE(LOAD8_S_I64)

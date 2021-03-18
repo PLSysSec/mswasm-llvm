@@ -3840,7 +3840,7 @@ public:
       RetSExt = Call.hasRetAttr(Attribute::SExt);
       RetZExt = Call.hasRetAttr(Attribute::ZExt);
       NoMerge = Call.hasFnAttr(Attribute::NoMerge);
-      
+
       Callee = Target;
 
       CallConv = Call.getCallingConv();
