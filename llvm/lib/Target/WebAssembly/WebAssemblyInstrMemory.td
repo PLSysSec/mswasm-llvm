@@ -61,6 +61,7 @@ defm LOAD_I32 : WebAssemblyLoad<I32, "i32.load", 0x28, []>;
 defm LOAD_I64 : WebAssemblyLoad<I64, "i64.load", 0x29, []>;
 defm LOAD_F32 : WebAssemblyLoad<F32, "f32.load", 0x2a, []>;
 defm LOAD_F64 : WebAssemblyLoad<F64, "f64.load", 0x2b, []>;
+defm LOAD_HANDLE : WebAssemblyLoad<HANDLE, "handle.load", 0xf7, []>;
 
 // Select loads with no constant offset.
 multiclass LoadPatNoOffset<ValueType ty, SDPatternOperator kind, string inst> {
@@ -72,6 +73,7 @@ defm : LoadPatNoOffset<i32, load, "LOAD_I32">;
 defm : LoadPatNoOffset<i64, load, "LOAD_I64">;
 defm : LoadPatNoOffset<f32, load, "LOAD_F32">;
 defm : LoadPatNoOffset<f64, load, "LOAD_F64">;
+defm : LoadPatNoOffset<iFATPTR64, load, "LOAD_HANDLE">;
 
 // Select loads with a constant offset.
 
@@ -87,11 +89,13 @@ defm : LoadPatImmOff<i32, load, addrPlusImm, "LOAD_I32">;
 defm : LoadPatImmOff<i64, load, addrPlusImm, "LOAD_I64">;
 defm : LoadPatImmOff<f32, load, addrPlusImm, "LOAD_F32">;
 defm : LoadPatImmOff<f64, load, addrPlusImm, "LOAD_F64">;
+defm : LoadPatImmOff<iFATPTR64, load, addrPlusImm, "LOAD_HANDLE">;
 /*
 defm : LoadPatImmOff<i32, load, or_is_add, "LOAD_I32">;
 defm : LoadPatImmOff<i64, load, or_is_add, "LOAD_I64">;
 defm : LoadPatImmOff<f32, load, or_is_add, "LOAD_F32">;
 defm : LoadPatImmOff<f64, load, or_is_add, "LOAD_F64">;
+defm : LoadPatImmOff<iFATPTR64, load, or_is_add, "LOAD_HANDLE">;
 */
 
 // Select loads with just a constant offset.
@@ -109,6 +113,7 @@ defm : LoadPatOffsetOnly<i32, load, "LOAD_I32">;
 defm : LoadPatOffsetOnly<i64, load, "LOAD_I64">;
 defm : LoadPatOffsetOnly<f32, load, "LOAD_F32">;
 defm : LoadPatOffsetOnly<f64, load, "LOAD_F64">;
+defm : LoadPatOffsetOnly<iFATPTR64, load, "LOAD_HANDLE">;
 
 multiclass LoadPatGlobalAddrOffOnly<ValueType ty, SDPatternOperator kind, string inst> {
   def : Pat<(ty (kind (WebAssemblywrapper tglobaladdr:$off))),
@@ -123,6 +128,7 @@ defm : LoadPatGlobalAddrOffOnly<i32, load, "LOAD_I32">;
 defm : LoadPatGlobalAddrOffOnly<i64, load, "LOAD_I64">;
 defm : LoadPatGlobalAddrOffOnly<f32, load, "LOAD_F32">;
 defm : LoadPatGlobalAddrOffOnly<f64, load, "LOAD_F64">;
+defm : LoadPatGlobalAddrOffOnly<iFATPTR64, load, "LOAD_HANDLE">;
 */
 
 // Extending load.
@@ -257,6 +263,7 @@ defm STORE_I32  : WebAssemblyStore<I32, "i32.store", 0x36>;
 defm STORE_I64  : WebAssemblyStore<I64, "i64.store", 0x37>;
 defm STORE_F32  : WebAssemblyStore<F32, "f32.store", 0x38>;
 defm STORE_F64  : WebAssemblyStore<F64, "f64.store", 0x39>;
+defm STORE_HANDLE : WebAssemblyStore<HANDLE, "handle.store", 0xf8>;
 
 // Select stores with no constant offset.
 multiclass StorePatNoOffset<ValueType ty, PatFrag node, string inst> {
@@ -269,6 +276,7 @@ defm : StorePatNoOffset<i32, store, "STORE_I32">;
 defm : StorePatNoOffset<i64, store, "STORE_I64">;
 defm : StorePatNoOffset<f32, store, "STORE_F32">;
 defm : StorePatNoOffset<f64, store, "STORE_F64">;
+defm : StorePatNoOffset<iFATPTR64, store, "STORE_HANDLE">;
 
 // Select stores with a constant offset.
 multiclass StorePatImmOff<ValueType ty, PatFrag kind, PatFrag operand,
@@ -282,11 +290,13 @@ defm : StorePatImmOff<i32, store, addrPlusImm, "STORE_I32">;
 defm : StorePatImmOff<i64, store, addrPlusImm, "STORE_I64">;
 defm : StorePatImmOff<f32, store, addrPlusImm, "STORE_F32">;
 defm : StorePatImmOff<f64, store, addrPlusImm, "STORE_F64">;
+defm : StorePatImmOff<iFATPTR64, store, addrPlusImm, "STORE_HANDLE">;
 /*
 defm : StorePatImmOff<i32, store, or_is_add, "STORE_I32">;
 defm : StorePatImmOff<i64, store, or_is_add, "STORE_I64">;
 defm : StorePatImmOff<f32, store, or_is_add, "STORE_F32">;
 defm : StorePatImmOff<f64, store, or_is_add, "STORE_F64">;
+defm : StorePatImmOff<iFATPTR64, store, or_is_add, "STORE_HANDLE">;
 */
 
 // Select stores with just a constant offset.
@@ -303,6 +313,7 @@ defm : StorePatOffsetOnly<i32, store, "STORE_I32">;
 defm : StorePatOffsetOnly<i64, store, "STORE_I64">;
 defm : StorePatOffsetOnly<f32, store, "STORE_F32">;
 defm : StorePatOffsetOnly<f64, store, "STORE_F64">;
+defm : StorePatOffsetOnly<iFATPTR64, store, "STORE_HANDLE">;
 
 multiclass StorePatGlobalAddrOffOnly<ValueType ty, PatFrag kind, string inst> {
   def : Pat<(kind ty:$val, (WebAssemblywrapper tglobaladdr:$off)),
@@ -318,6 +329,7 @@ defm : StorePatGlobalAddrOffOnly<i32, store, "STORE_I32">;
 defm : StorePatGlobalAddrOffOnly<i64, store, "STORE_I64">;
 defm : StorePatGlobalAddrOffOnly<f32, store, "STORE_F32">;
 defm : StorePatGlobalAddrOffOnly<f64, store, "STORE_F64">;
+defm : StorePatGlobalAddrOffOnly<iFATPTR64, store, "STORE_HANDLE">;
 */
 
 // Truncating store.

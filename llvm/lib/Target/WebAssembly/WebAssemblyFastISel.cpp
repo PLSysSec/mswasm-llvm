@@ -145,6 +145,9 @@ private:
       if (Subtarget->hasUnimplementedSIMD128())
         return VT;
       break;
+    case MVT::iFATPTR64:
+    case MVT::iFATPTRAny:
+      return MVT::iFATPTR64;
     default:
       break;
     }
@@ -381,8 +384,7 @@ void WebAssemblyFastISel::materializeLoadStoreOperands(Address &Addr) {
   if (Addr.isRegBase()) {
     unsigned Reg = Addr.getReg();
     if (Reg == 0) {
-      Reg = createResultReg(Subtarget->hasAddr64() ? &WebAssembly::I64RegClass
-                                                   : &WebAssembly::I32RegClass);
+      Reg = createResultReg(&WebAssembly::HANDLERegClass);
       unsigned Opc = Subtarget->hasAddr64() ? WebAssembly::CONST_I64
                                             : WebAssembly::CONST_I32;
       BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(Opc), Reg)
@@ -599,9 +601,7 @@ unsigned WebAssemblyFastISel::fastMaterializeAlloca(const AllocaInst *AI) {
       FuncInfo.StaticAllocaMap.find(AI);
 
   if (SI != FuncInfo.StaticAllocaMap.end()) {
-    unsigned ResultReg =
-        createResultReg(Subtarget->hasAddr64() ? &WebAssembly::I64RegClass
-                                               : &WebAssembly::I32RegClass);
+    unsigned ResultReg = createResultReg(&WebAssembly::HANDLERegClass);
     unsigned Opc =
         Subtarget->hasAddr64() ? WebAssembly::COPY_I64 : WebAssembly::COPY_I32;
     BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(Opc), ResultReg)
@@ -709,6 +709,10 @@ bool WebAssemblyFastISel::fastLowerArguments() {
       Opc = WebAssembly::ARGUMENT_exnref;
       RC = &WebAssembly::EXNREFRegClass;
       break;
+    case MVT::iFATPTR64:
+      Opc = WebAssembly::ARGUMENT_iFATPTR64;
+      RC = &WebAssembly::HANDLERegClass;
+      break;
     default:
       return false;
     }
@@ -809,6 +813,9 @@ bool WebAssemblyFastISel::selectCall(const Instruction *I) {
       break;
     case MVT::exnref:
       ResultReg = createResultReg(&WebAssembly::EXNREFRegClass);
+      break;
+    case MVT::iFATPTR64:
+      ResultReg = createResultReg(&WebAssembly::HANDLERegClass);
       break;
     default:
       return false;
@@ -920,6 +927,10 @@ bool WebAssemblyFastISel::selectSelect(const Instruction *I) {
   case MVT::exnref:
     Opc = WebAssembly::SELECT_EXNREF;
     RC = &WebAssembly::EXNREFRegClass;
+    break;
+  case MVT::iFATPTR64:
+    Opc = WebAssembly::SELECT_HANDLE;
+    RC = &WebAssembly::HANDLERegClass;
     break;
   default:
     return false;
@@ -1186,6 +1197,10 @@ bool WebAssemblyFastISel::selectLoad(const Instruction *I) {
     Opc = WebAssembly::LOAD_F64_handle;
     RC = &WebAssembly::F64RegClass;
     break;
+  case MVT::iFATPTR64:
+    Opc = WebAssembly::LOAD_HANDLE_handle;
+    RC = &WebAssembly::HANDLERegClass;
+    break;
   default:
     return false;
   }
@@ -1237,6 +1252,9 @@ bool WebAssemblyFastISel::selectStore(const Instruction *I) {
     break;
   case MVT::f64:
     Opc = WebAssembly::STORE_F64_handle;
+    break;
+  case MVT::iFATPTR64:
+    Opc = WebAssembly::STORE_HANDLE_handle;
     break;
   default:
     return false;
@@ -1321,6 +1339,7 @@ bool WebAssemblyFastISel::selectRet(const Instruction *I) {
   case MVT::v4f32:
   case MVT::v2f64:
   case MVT::exnref:
+  case MVT::iFATPTR64:
     break;
   default:
     return false;
