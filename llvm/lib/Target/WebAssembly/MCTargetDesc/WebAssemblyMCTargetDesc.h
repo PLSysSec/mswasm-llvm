@@ -297,6 +297,8 @@ inline bool isArgument(unsigned Opc) {
   case WebAssembly::ARGUMENT_v2f64_S:
   case WebAssembly::ARGUMENT_exnref:
   case WebAssembly::ARGUMENT_exnref_S:
+  case WebAssembly::ARGUMENT_iFATPTR64:
+  case WebAssembly::ARGUMENT_iFATPTR64_S:
     return true;
   default:
     return false;
@@ -317,6 +319,8 @@ inline bool isCopy(unsigned Opc) {
   case WebAssembly::COPY_V128_S:
   case WebAssembly::COPY_EXNREF:
   case WebAssembly::COPY_EXNREF_S:
+  case WebAssembly::COPY_HANDLE:
+  case WebAssembly::COPY_HANDLE_S:
     return true;
   default:
     return false;
@@ -337,6 +341,8 @@ inline bool isTee(unsigned Opc) {
   case WebAssembly::TEE_V128_S:
   case WebAssembly::TEE_EXNREF:
   case WebAssembly::TEE_EXNREF_S:
+  case WebAssembly::TEE_HANDLE:
+  case WebAssembly::TEE_HANDLE_S:
     return true;
   default:
     return false;
