@@ -49,7 +49,7 @@ multiclass WebAssemblyLoad<WebAssemblyRegClass rc, string Name, int Opcode,
                  (ins P2Align:$p2align, offset32_op:$off, HANDLE:$addr),
                  (outs), (ins P2Align:$p2align, offset32_op:$off),
                  [], !strconcat(Name, "\t$dst, ${off}(${addr})${p2align}"),
-                 !strconcat(Name, "\t${off}${p2align}"), Opcode, "true">,
+                 !strconcat(Name, "\t${off}${p2align}"), Opcode>,
                Requires<reqs>;
   }
 }
@@ -247,7 +247,7 @@ multiclass WebAssemblyStore<WebAssemblyRegClass rc, string Name, int Opcode,
                   (outs),
                   (ins P2Align:$p2align, offset32_op:$off), [],
                   !strconcat(Name, "\t${off}(${addr})${p2align}, $val"),
-                  !strconcat(Name, "\t${off}${p2align}"), Opcode, "false">,
+                  !strconcat(Name, "\t${off}${p2align}"), Opcode>,
                 Requires<reqs>;
 }
 

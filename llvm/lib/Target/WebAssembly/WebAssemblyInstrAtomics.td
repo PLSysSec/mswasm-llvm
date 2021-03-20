@@ -16,7 +16,7 @@ multiclass ATOMIC_I<dag oops_r, dag iops_r, dag oops_s, dag iops_s,
                     list<dag> pattern_r, string asmstr_r,
                     string asmstr_s, bits<32> atomic_op> {
   defm "" : I<oops_r, iops_r, oops_s, iops_s, pattern_r, asmstr_r, asmstr_s,
-              !or(0xfe00, !and(0xff, atomic_op)), "false">,
+              !or(0xfe00, !and(0xff, atomic_op))>,
             Requires<[HasAtomics]>;
 }
 

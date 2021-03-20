@@ -54,11 +54,11 @@ class NI<dag oops, dag iops, list<dag> pattern, string stack,
 // there is always an equivalent pair of instructions.
 multiclass I<dag oops_r, dag iops_r, dag oops_s, dag iops_s,
              list<dag> pattern_r, string asmstr_r = "", string asmstr_s = "",
-             bits<32> inst = -1, string is64 = "false"> {
+             bits<32> inst = -1> {
   let isCodeGenOnly = 1 in
-  def "" : NI<oops_r, iops_r, pattern_r, "false", asmstr_r, inst, is64>;
+  def "" : NI<oops_r, iops_r, pattern_r, "false", asmstr_r, inst, "false">;
   let BaseName = NAME in
-  def _S : NI<oops_s, iops_s, [], "true", asmstr_s, inst, is64>;
+  def _S : NI<oops_s, iops_s, [], "true", asmstr_s, inst, "false">;
 }
 
 // For instructions that have no register ops, so both sets are the same.
