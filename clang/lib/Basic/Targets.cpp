@@ -638,6 +638,10 @@ TargetInfo::CreateTargetInfo(DiagnosticsEngine &Diags,
   if (Triple.isMIPS() && Opts->ABI == "purecap") {
     Triple.setEnvironment(llvm::Triple::CheriPurecap);
   }
+  // MS-Wasm also wants that, whatever it is
+  if (Triple.isWasm()) {
+    Triple.setEnvironment(llvm::Triple::CheriPurecap);
+  }
 
   // Construct the target
   std::unique_ptr<TargetInfo> Target(AllocateTarget(Triple, *Opts));

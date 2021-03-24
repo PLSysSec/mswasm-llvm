@@ -112,6 +112,29 @@ static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM,
   return *RM;
 }
 
+static std::string computeDataLayout(const Triple &TT, StringRef FS) {
+  StringRef BaseLayout;
+  if (TT.isArch64Bit())
+    BaseLayout = "e-m:e-p:64:64-i64:64-n32:64-S128";
+  else
+    BaseLayout = "e-m:e-p:32:32-i64:64-n32:64-S128";
+
+  StringRef CapTypes = "";
+  StringRef PurecapOptions = "";
+
+  // For MS-Wasm, we always add these (which for RISCV are guarded by "+xcheri"
+  // target feature)
+  if (TT.isArch64Bit())
+    CapTypes = "-pf200:128:128:128:64";
+  else
+    CapTypes = "-pf200:64:64:64:32";
+
+  // For MS-Wasm, it's always a "CheriPureCapABI"
+  PurecapOptions = "-A200-P200-G200";
+
+  return (BaseLayout + CapTypes + PurecapOptions).str();
+}
+
 /// Create an WebAssembly architecture model.
 ///
 WebAssemblyTargetMachine::WebAssemblyTargetMachine(
@@ -119,8 +142,7 @@ WebAssemblyTargetMachine::WebAssemblyTargetMachine(
     const TargetOptions &Options, Optional<Reloc::Model> RM,
     Optional<CodeModel::Model> CM, CodeGenOpt::Level OL, bool JIT)
     : LLVMTargetMachine(T,
-                        TT.isArch64Bit() ? "e-m:e-p:64:64-i64:64-n32:64-S128"
-                                         : "e-m:e-p:32:32-i64:64-n32:64-S128",
+                        computeDataLayout(TT, FS),
                         TT, CPU, FS, Options, getEffectiveRelocModel(RM, TT),
                         getEffectiveCodeModel(CM, CodeModel::Large), OL),
       TLOF(new WebAssemblyTargetObjectFile()) {

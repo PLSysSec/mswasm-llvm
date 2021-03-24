@@ -36,6 +36,9 @@ static constexpr llvm::StringLiteral ValidCPUNames[] = {
 StringRef WebAssemblyTargetInfo::getABI() const { return ABI; }
 
 bool WebAssemblyTargetInfo::setABI(const std::string &Name) {
+  // MS-Wasm always enabled: all pointers are capabilities
+  CapabilityABI = true;
+
   if (Name != "mvp" && Name != "experimental-mv")
     return false;
 

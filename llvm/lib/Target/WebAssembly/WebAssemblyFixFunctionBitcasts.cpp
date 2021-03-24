@@ -296,6 +296,9 @@ bool FixFunctionBitcasts::runOnModule(Module &M) {
     if (!Wrapper)
       continue;
 
+    // For MS-Wasm, this creates problems, but `continue` looks safe (if sub-optimal)
+    continue;
+
     if (isa<Constant>(U->get()))
       U->get()->replaceAllUsesWith(Wrapper);
     else

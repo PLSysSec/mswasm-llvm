@@ -937,11 +937,11 @@ private:
   }
 };
 
-class WebAssemblyTargetCodeGenInfo final : public TargetCodeGenInfo {
+class WebAssemblyTargetCodeGenInfo final : public CommonCheriTargetCodeGenInfo {
 public:
   explicit WebAssemblyTargetCodeGenInfo(CodeGen::CodeGenTypes &CGT,
                                         WebAssemblyABIInfo::ABIKind K)
-      : TargetCodeGenInfo(std::make_unique<WebAssemblyABIInfo>(CGT, K)) {}
+      : CommonCheriTargetCodeGenInfo(std::make_unique<WebAssemblyABIInfo>(CGT, K)) {}
 
   void setTargetAttributes(const Decl *D, llvm::GlobalValue *GV,
                            CodeGen::CodeGenModule &CGM) const override {
@@ -972,6 +972,10 @@ public:
       if (!FD->doesThisDeclarationHaveABody() && !FD->hasPrototype())
         Fn->addFnAttr("no-prototype");
     }
+  }
+
+  unsigned getCHERICapabilityAS() const override {
+    return 200;
   }
 };
 

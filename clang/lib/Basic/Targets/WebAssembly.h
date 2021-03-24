@@ -77,6 +77,25 @@ private:
                  const std::vector<std::string> &FeaturesVec) const override;
   bool hasFeature(StringRef Feature) const final;
 
+  uint64_t CapSize = 64;
+  bool SupportsCapabilities() const override { return true; }
+  unsigned getIntCapWidth() const override { return CapSize; }
+  unsigned getIntCapAlign() const override { return CapSize; }
+  uint64_t getCHERICapabilityWidth() const override { return CapSize; }
+  uint64_t getCHERICapabilityAlign() const override { return CapSize; }
+  uint64_t getPointerWidthV(unsigned AddrSpace) const override {
+    return (AddrSpace == 200) ? CapSize : PointerWidth;
+  }
+  uint64_t getPointerRangeV(unsigned AddrSpace) const override {
+    return (AddrSpace == 200) ? getPointerRangeForCHERICapability() : PointerWidth;
+  }
+  uint64_t getPointerAlignV(unsigned AddrSpace) const override {
+    return (AddrSpace == 200) ? CapSize : PointerAlign;
+  }
+  uint64_t getPointerRangeForCHERICapability() const override {
+    return CapSize;
+  }
+
   bool handleTargetFeatures(std::vector<std::string> &Features,
                             DiagnosticsEngine &Diags) final;
 
@@ -142,7 +161,8 @@ public:
   explicit WebAssembly32TargetInfo(const llvm::Triple &T,
                                    const TargetOptions &Opts)
       : WebAssemblyTargetInfo(T, Opts) {
-    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128");
+    // the following assumes CapabilityABI
+    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128-A200-P200-G200");
   }
 
 protected:
@@ -161,7 +181,8 @@ public:
     SizeType = UnsignedLong;
     PtrDiffType = SignedLong;
     IntPtrType = SignedLong;
-    resetDataLayout("e-m:e-p:64:64-i64:64-n32:64-S128");
+    // the following assumes CapabilityABI
+    resetDataLayout("e-m:e-p:64:64-i64:64-n32:64-S128-A200-P200-G200");
   }
 
 protected:
