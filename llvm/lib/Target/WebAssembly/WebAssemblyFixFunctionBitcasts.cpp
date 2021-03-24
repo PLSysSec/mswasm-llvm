@@ -257,7 +257,7 @@ bool FixFunctionBitcasts::runOnModule(Module &M) {
       Main = &F;
       LLVMContext &C = M.getContext();
       Type *MainArgTys[] = {Type::getInt32Ty(C),
-                            PointerType::get(Type::getInt8PtrTy(C), 0)};
+                            PointerType::get(Type::getInt8PtrTy(C), 200)};
       FunctionType *MainTy = FunctionType::get(Type::getInt32Ty(C), MainArgTys,
                                                /*isVarArg=*/false);
       if (shouldFixMainFunction(F.getFunctionType(), MainTy)) {
@@ -266,7 +266,7 @@ bool FixFunctionBitcasts::runOnModule(Module &M) {
         Value *Args[] = {UndefValue::get(MainArgTys[0]),
                          UndefValue::get(MainArgTys[1])};
         Value *Casted =
-            ConstantExpr::getBitCast(Main, PointerType::get(MainTy, 0));
+            ConstantExpr::getBitCast(Main, PointerType::get(MainTy, 200));
         CallMain = CallInst::Create(MainTy, Casted, Args, "call_main");
         Use *UseMain = &CallMain->getOperandUse(2);
         Uses.push_back(std::make_pair(UseMain, &F));
