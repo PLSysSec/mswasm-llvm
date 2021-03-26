@@ -40,7 +40,7 @@ using namespace llvm;
 WebAssemblyTargetLowering::WebAssemblyTargetLowering(
     const TargetMachine &TM, const WebAssemblySubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
-  auto MVTPtr = Subtarget->hasAddr64() ? MVT::i64 : MVT::i32;
+  auto MVTPtr = MVT::iFATPTR64;
 
   // Booleans always contain 0 or 1.
   setBooleanContents(ZeroOrOneBooleanContent);
@@ -56,6 +56,7 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   addRegisterClass(MVT::i64, &WebAssembly::I64RegClass);
   addRegisterClass(MVT::f32, &WebAssembly::F32RegClass);
   addRegisterClass(MVT::f64, &WebAssembly::F64RegClass);
+  addRegisterClass(MVT::iFATPTR64, &WebAssembly::HANDLERegClass);
   if (Subtarget->hasSIMD128()) {
     addRegisterClass(MVT::v16i8, &WebAssembly::V128RegClass);
     addRegisterClass(MVT::v8i16, &WebAssembly::V128RegClass);
@@ -1145,10 +1146,12 @@ SDValue WebAssemblyTargetLowering::LowerCopyToReg(SDValue Op,
     SDLoc DL(Op);
     unsigned Reg = cast<RegisterSDNode>(Op.getOperand(1))->getReg();
     EVT VT = Src.getValueType();
-    SDValue Copy(DAG.getMachineNode(VT == MVT::i32 ? WebAssembly::COPY_I32
-                                                   : WebAssembly::COPY_I64,
-                                    DL, VT, Src),
-                 0);
+    unsigned int Opc;
+    if (VT == MVT::i32) Opc = WebAssembly::COPY_I32;
+    else if (VT == MVT::i64) Opc = WebAssembly::COPY_I64;
+    else if (VT == MVT::iFATPTR64) Opc = WebAssembly::COPY_HANDLE;
+    else assert("Unexpected VT");
+    SDValue Copy(DAG.getMachineNode(Opc, DL, VT, Src), 0);
     return Op.getNode()->getNumValues() == 1
                ? DAG.getCopyToReg(Chain, DL, Reg, Copy)
                : DAG.getCopyToReg(Chain, DL, Reg, Copy,

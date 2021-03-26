@@ -113,6 +113,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <stdio.h>
 
 using namespace llvm;
 
@@ -3636,6 +3637,10 @@ void Verifier::verifySwiftErrorValue(const Value *SwiftErrorVal) {
 void Verifier::visitAllocaInst(AllocaInst &AI) {
   SmallPtrSet<Type*, 4> Visited;
   PointerType *PTy = AI.getType();
+  if (PTy->getAddressSpace() != DL.getAllocaAddrSpace()) {
+    fprintf(stderr, "About to assert-fail. Alloca result type is shown on the next line, while stack address space is %u\n", DL.getAllocaAddrSpace());
+    PTy->dump();
+  }
   // TODO: Relax this restriction?
   Assert(PTy->getAddressSpace() == DL.getAllocaAddrSpace(),
          "Allocation instruction pointer not in the stack address space!",

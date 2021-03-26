@@ -44,6 +44,7 @@
 #include "llvm/Transforms/Utils/CheriSetBounds.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/PromoteMemToReg.h"
+#include <stdio.h>
 
 using namespace clang;
 using namespace CodeGen;
@@ -78,6 +79,8 @@ CodeGenFunction::CodeGenFunction(CodeGenModule &cgm, bool suppressNewContext)
 
   SetFastMathFlags(CurFPFeatures);
   SetFPModel();
+
+  assert(CGM.getDataLayout().getAllocaAddrSpace() == 200);
 }
 
 CodeGenFunction::~CodeGenFunction() {

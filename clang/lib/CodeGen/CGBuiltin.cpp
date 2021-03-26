@@ -53,6 +53,7 @@
 #include "llvm/Support/X86TargetParser.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include <sstream>
+#include <stdio.h>
 
 using namespace clang;
 using namespace CodeGen;
@@ -2709,6 +2710,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BIalloca:
   case Builtin::BI_alloca:
   case Builtin::BI__builtin_alloca: {
+    fprintf(stderr, "Encountered a __builtin_alloca");
     Value *Size = EmitScalarExpr(E->getArg(0));
     const TargetInfo &TI = getContext().getTargetInfo();
     // The alignment of the alloca should correspond to __BIGGEST_ALIGNMENT__.

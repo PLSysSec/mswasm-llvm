@@ -488,6 +488,7 @@ void CompilerInstance::createASTContext() {
   auto *Context = new ASTContext(getLangOpts(), PP.getSourceManager(),
                                  PP.getIdentifierTable(), PP.getSelectorTable(),
                                  PP.getBuiltinInfo());
+  fprintf(stderr, "calling InitBuiltinTypes from CompilerInstance::createASTContext()\n");
   Context->InitBuiltinTypes(getTarget(), getAuxTarget());
   setASTContext(Context);
 }

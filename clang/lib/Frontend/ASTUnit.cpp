@@ -596,6 +596,7 @@ private:
       return;
 
     // Initialize the ASTContext
+    fprintf(stderr, "calling InitBuiltinTypes from ASTInfoCollector::updated()\n");
     Context->InitBuiltinTypes(*Target);
 
     // Adjust printing policy based on language options.

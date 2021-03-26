@@ -24,6 +24,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include <memory>
+#include <stdio.h>
 
 using namespace clang;
 using namespace CodeGen;
@@ -139,6 +140,7 @@ namespace {
 
       M->setTargetTriple(Ctx->getTargetInfo().getTriple().getTriple());
       M->setDataLayout(Ctx->getTargetInfo().getDataLayout());
+      fprintf(stderr, "Initializing a CodeGeneratorImpl, set the DataLayout of the Module to %s\n", M->getDataLayoutStr().c_str());
       const auto &SDKVersion = Ctx->getTargetInfo().getSDKVersion();
       if (!SDKVersion.empty())
         M->setSDKVersion(SDKVersion);

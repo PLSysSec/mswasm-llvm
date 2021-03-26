@@ -2884,6 +2884,7 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
   unsigned MatcherIndex = 0;
 
   if (!OpcodeOffset.empty()) {
+    LLVM_DEBUG(dbgs() << "  N.getOpcode() is " << N.getOpcode() << "\n");
     // Already computed the OpcodeOffset table, just index into it.
     if (N.getOpcode() < OpcodeOffset.size())
       MatcherIndex = OpcodeOffset[N.getOpcode()];
