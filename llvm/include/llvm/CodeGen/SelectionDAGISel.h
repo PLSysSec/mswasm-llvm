@@ -170,6 +170,131 @@ public:
     OPC_Coverage
   };
 
+  static std::string nameOfBuiltinOpcode(BuiltinOpcodes opcode) {
+    switch (opcode) {
+      case OPC_Scope:
+        return "OPC_Scope";
+      case OPC_RecordNode:
+        return "OPC_RecordNode";
+      case OPC_RecordChild0:
+      case OPC_RecordChild1:
+      case OPC_RecordChild2:
+      case OPC_RecordChild3:
+      case OPC_RecordChild4:
+      case OPC_RecordChild5:
+      case OPC_RecordChild6:
+      case OPC_RecordChild7:
+        return "OPC_RecordChild";
+      case OPC_RecordMemRef:
+        return "OPC_RecordMemRef";
+      case OPC_CaptureGlueInput:
+        return "OPC_CaptureGlueInput";
+      case OPC_MoveChild:
+      case OPC_MoveChild0:
+      case OPC_MoveChild1:
+      case OPC_MoveChild2:
+      case OPC_MoveChild3:
+      case OPC_MoveChild4:
+      case OPC_MoveChild5:
+      case OPC_MoveChild6:
+      case OPC_MoveChild7:
+        return "OPC_MoveChild";
+      case OPC_MoveParent:
+        return "OPC_MoveParent";
+      case OPC_CheckSame:
+        return "OPC_CheckSame";
+      case OPC_CheckChild0Same:
+      case OPC_CheckChild1Same:
+      case OPC_CheckChild2Same:
+      case OPC_CheckChild3Same:
+        return "OPC_CheckChildSame";
+      case OPC_CheckPatternPredicate:
+        return "OPC_CheckPatternPredicate";
+      case OPC_CheckPredicate:
+        return "OPC_CheckPredicate";
+      case OPC_CheckPredicateWithOperands:
+        return "OPC_CheckPredicateWithOperands";
+      case OPC_CheckOpcode:
+        return "OPC_CheckOpcode";
+      case OPC_SwitchOpcode:
+        return "OPC_SwitchOpcode";
+      case OPC_CheckType:
+        return "OPC_CheckType";
+      case OPC_CheckTypeRes:
+        return "OPC_CheckTypeRes";
+      case OPC_SwitchType:
+        return "OPC_SwitchType";
+      case OPC_CheckChild0Type:
+      case OPC_CheckChild1Type:
+      case OPC_CheckChild2Type:
+      case OPC_CheckChild3Type:
+      case OPC_CheckChild4Type:
+      case OPC_CheckChild5Type:
+      case OPC_CheckChild6Type:
+      case OPC_CheckChild7Type:
+        return "OPC_CheckChildType";
+      case OPC_CheckInteger:
+        return "OPC_CheckInteger";
+      case OPC_CheckChild0Integer:
+      case OPC_CheckChild1Integer:
+      case OPC_CheckChild2Integer:
+      case OPC_CheckChild3Integer:
+      case OPC_CheckChild4Integer:
+        return "OPC_CheckChildInteger";
+      case OPC_CheckCondCode:
+        return "OPC_CheckCondCode";
+      case OPC_CheckChild2CondCode:
+        return "OPC_CheckChild2CondCode";
+      case OPC_EmitInteger:
+        return "OPC_EmitInteger";
+      case OPC_EmitRegister:
+        return "OPC_EmitRegister";
+      case OPC_EmitRegister2:
+        return "OPC_EmitRegister2";
+      case OPC_EmitCopyToReg:
+        return "OPC_EmitCopyToReg";
+      case OPC_EmitCopyToReg2:
+        return "OPC_EmitCopyToReg2";
+      case OPC_EmitNode:
+        return "OPC_EmitNode";
+      case OPC_EmitNode0:
+        return "OPC_EmitNode0";
+      case OPC_EmitNode1:
+        return "OPC_EmitNode1";
+      case OPC_EmitNode2:
+        return "OPC_EmitNode2";
+      case OPC_EmitNodeXForm:
+        return "OPC_EmitNodeXForm";
+      case OPC_CheckValueType:
+        return "OPC_CheckValueType";
+      case OPC_MorphNodeTo:
+        return "OPC_MorphNodeTo";
+      case OPC_MorphNodeTo0:
+        return "OPC_MorphNodeTo0";
+      case OPC_MorphNodeTo1:
+        return "OPC_MorphNodeTo1";
+      case OPC_MorphNodeTo2:
+        return "OPC_MorphNodeTo2";
+      case OPC_CompleteMatch:
+        return "OPC_CompleteMatch";
+      case OPC_CheckComplexPat:
+      case OPC_CheckAndImm:
+      case OPC_CheckOrImm:
+      case OPC_CheckImmAllOnesV:
+      case OPC_CheckImmAllZerosV:
+      case OPC_CheckFoldableChainNode:
+      case OPC_EmitConvertToTarget:
+      case OPC_EmitMergeInputChains:
+      case OPC_EmitMergeInputChains1_0:
+      case OPC_EmitMergeInputChains1_1:
+      case OPC_EmitMergeInputChains1_2:
+      case OPC_Coverage:
+        return "<some other opcode>";
+      default:
+        return "<opcode not in our list>";
+    }
+  }
+
   enum {
     OPFL_None       = 0,  // Node has no chain or glue input and isn't variadic.
     OPFL_Chain      = 1,     // Node has a chain input.

@@ -2884,7 +2884,14 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
   unsigned MatcherIndex = 0;
 
   if (!OpcodeOffset.empty()) {
-    LLVM_DEBUG(dbgs() << "  N.getOpcode() is " << N.getOpcode() << "\n");
+    LLVM_DEBUG(dbgs() << "  N.getOpcode() is " << N.getOpcode() << ": " << NodeToMatch->getOperationName() << "\n");
+    if (N.isMachineOpcode()) {
+      LLVM_DEBUG(dbgs() << "    (that's a MachineOpcode)\n");
+    } else if (N.isTargetOpcode()) {
+      LLVM_DEBUG(dbgs() << "    (that's a TargetOpcode)\n");
+    } else {
+      LLVM_DEBUG(dbgs() << "    (that's an ISD Opcode)\n");
+    }
     // Already computed the OpcodeOffset table, just index into it.
     if (N.getOpcode() < OpcodeOffset.size())
       MatcherIndex = OpcodeOffset[N.getOpcode()];
@@ -2922,6 +2929,7 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     unsigned CurrentOpcodeIndex = MatcherIndex;
 #endif
     BuiltinOpcodes Opcode = (BuiltinOpcodes)MatcherTable[MatcherIndex++];
+    LLVM_DEBUG(dbgs() << "  Resulting Opcode is " << Opcode << ": " << nameOfBuiltinOpcode(Opcode) << "\n");
     switch (Opcode) {
     case OPC_Scope: {
       // Okay, the semantics of this operation are that we should push a scope

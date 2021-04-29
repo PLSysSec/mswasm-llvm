@@ -161,8 +161,8 @@ public:
   explicit WebAssembly32TargetInfo(const llvm::Triple &T,
                                    const TargetOptions &Opts)
       : WebAssemblyTargetInfo(T, Opts) {
-    // the following assumes CapabilityABI
-    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128-A200-P200-G200");
+    // the following assumes CapabilityABI, and the equivalent of RISCV's "+xcheri" feature
+    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128-pf200:64:64:64:32-A200-P200-G200");
   }
 
 protected:

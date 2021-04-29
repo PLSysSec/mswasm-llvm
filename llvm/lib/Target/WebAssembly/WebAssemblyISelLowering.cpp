@@ -211,6 +211,7 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
 
   setOperationAction(ISD::FrameIndex, MVT::i32, Custom);
   setOperationAction(ISD::FrameIndex, MVT::i64, Custom);
+  setOperationAction(ISD::FrameIndex, MVT::iFATPTR64, Custom);
   setOperationAction(ISD::CopyToReg, MVT::Other, Custom);
 
   // Expand these forms; we pattern-match the forms that we can handle in isel.
