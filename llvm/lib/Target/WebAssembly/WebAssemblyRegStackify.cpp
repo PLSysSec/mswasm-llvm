@@ -129,6 +129,8 @@ static void convertImplicitDefToConstZero(MachineInstr *MI,
                                   TII->get(WebAssembly::CONST_I32), TempReg)
                               .addImm(0);
     LIS.InsertMachineInstrInMaps(*Const);
+  } else if (RegClass == &WebAssembly::HANDLERegClass) {
+    MI->setDesc(TII->get(WebAssembly::HANDLE_NULL));
   } else {
     llvm_unreachable("Unexpected reg class");
   }
@@ -503,6 +505,10 @@ static unsigned getTeeOpcode(const TargetRegisterClass *RC) {
     return WebAssembly::TEE_F64;
   if (RC == &WebAssembly::V128RegClass)
     return WebAssembly::TEE_V128;
+  if (RC == &WebAssembly::HANDLERegClass)
+    return WebAssembly::TEE_HANDLE;
+  if (RC == &WebAssembly::EXNREFRegClass)
+    return WebAssembly::TEE_EXNREF;
   llvm_unreachable("Unexpected register class");
 }
 

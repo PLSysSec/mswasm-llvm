@@ -35,7 +35,7 @@ def SP64 : WebAssemblyReg<"%SP64">;
 // The register allocation framework requires register classes have at least
 // one register, so we define a few for the integer / floating point register
 // classes since we otherwise don't need a physical register in those classes.
-// These are also used a "types" in the generated assembly matcher.
+// These are also used as "types" in the generated assembly matcher.
 def I32_0 : WebAssemblyReg<"%i32.0">;
 def I64_0 : WebAssemblyReg<"%i64.0">;
 def F32_0 : WebAssemblyReg<"%f32.0">;
@@ -59,11 +59,11 @@ def ARGUMENTS : WebAssemblyReg<"ARGUMENTS">;
 //  Register classes
 //===----------------------------------------------------------------------===//
 
-def I32 : WebAssemblyRegClass<[i32], 32, (add FP32, SP32, I32_0)>;
-def I64 : WebAssemblyRegClass<[i64], 64, (add FP64, SP64, I64_0)>;
+def I32 : WebAssemblyRegClass<[i32], 32, (add I32_0)>;
+def I64 : WebAssemblyRegClass<[i64], 64, (add I64_0)>;
 def F32 : WebAssemblyRegClass<[f32], 32, (add F32_0)>;
 def F64 : WebAssemblyRegClass<[f64], 64, (add F64_0)>;
 def V128 : WebAssemblyRegClass<[v4f32, v2f64, v2i64, v4i32, v16i8, v8i16], 128,
                                (add V128_0)>;
 def EXNREF : WebAssemblyRegClass<[exnref], 0, (add EXNREF_0)>;
-def HANDLE : WebAssemblyRegClass<[iFATPTR64], 64, (add HANDLE_0)>;
+def HANDLE : WebAssemblyRegClass<[iFATPTR64], 64, (add HANDLE_0, FP32, FP64, SP32, SP64)>;

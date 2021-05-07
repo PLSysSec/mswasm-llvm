@@ -58,9 +58,13 @@ public:
   static unsigned getOpcConst(const MachineFunction &MF);
   static unsigned getOpcAdd(const MachineFunction &MF);
   static unsigned getOpcSub(const MachineFunction &MF);
+  static unsigned getOpcHandleAdd(const MachineFunction &MF);
+  //static unsigned getOpcHandleSub(const MachineFunction &MF);
   static unsigned getOpcAnd(const MachineFunction &MF);
   static unsigned getOpcGlobGet(const MachineFunction &MF);
   static unsigned getOpcGlobSet(const MachineFunction &MF);
+  static unsigned getOpcGlobGetHandle(const MachineFunction &MF);
+  static unsigned getOpcGlobSetHandle(const MachineFunction &MF);
 
 private:
   bool hasBP(const MachineFunction &MF) const;

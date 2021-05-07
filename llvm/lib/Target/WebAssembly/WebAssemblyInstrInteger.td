@@ -93,13 +93,11 @@ defm EQZ_I64 : I<(outs I32:$dst), (ins I64:$src), (outs), (ins),
                  [(set I32:$dst, (setcc I64:$src, 0, SETEQ))],
                  "i64.eqz \t$dst, $src", "i64.eqz", 0x50>;
 
-/*
 let isCommutable = 1 in
-defm HANDLE_ADD : I<(outs HANDLE:$dst), (ins HANDLE:$h, offset32_op:$off), (outs), (ins),
-                    [(set HANDLE:$dst, (ptradd HANDLE:$h, offset32_op:$off))],
+defm HANDLE_ADD : I<(outs HANDLE:$dst), (ins HANDLE:$h, I32:$off), (outs), (ins),
+                    [(set HANDLE:$dst, (ptradd HANDLE:$h, I32:$off))],
                     "handle.add \t$dst, $h, $off",
                     "handle.add", 0xf9>;
-*/
 /*
 defm HANDLE_SUB : I<(outs HANDLE:$dst), (ins HANDLE:$h, offset32_op:$off), (outs), (ins),
                     [(set HANDLE:$dst, (ptrsub HANDLE:$h, offset32_op:$off))],

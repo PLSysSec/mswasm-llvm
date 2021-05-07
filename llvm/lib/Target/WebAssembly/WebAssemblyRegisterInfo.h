@@ -44,6 +44,11 @@ public:
   const TargetRegisterClass *
   getPointerRegClass(const MachineFunction &MF,
                      unsigned Kind = 0) const override;
+  const TargetRegisterClass *
+  getI32RegClass(const MachineFunction &MF) const override;
+  const TargetRegisterClass *
+  getI64RegClass(const MachineFunction &MF) const override;
+
   // This does not apply to wasm.
   const uint32_t *getNoPreservedMask() const override { return nullptr; }
 };

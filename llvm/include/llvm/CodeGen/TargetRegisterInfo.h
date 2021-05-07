@@ -705,6 +705,18 @@ public:
     llvm_unreachable("Target didn't implement getPointerRegClass!");
   }
 
+  /// Returns a TargetRegisterClass used for i32 values.
+  virtual const TargetRegisterClass *
+  getI32RegClass(const MachineFunction &MF) const {
+    llvm_unreachable("Target didn't implement getI32RegClass!");
+  }
+
+  /// Returns a TargetRegisterClass used for i64 values.
+  virtual const TargetRegisterClass *
+  getI64RegClass(const MachineFunction &MF) const {
+    llvm_unreachable("Target didn't implement getI64RegClass!");
+  }
+
   /// Returns a legal register class to copy a register in the specified class
   /// to or from. If it is possible to copy the register directly without using
   /// a cross register class copy, return the specified RC. Returns NULL if it

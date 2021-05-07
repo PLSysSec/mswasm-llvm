@@ -124,9 +124,7 @@ bool WebAssemblyFrameLowering::needsSPWriteback(
 }
 
 unsigned WebAssemblyFrameLowering::getSPReg(const MachineFunction &MF) {
-  return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
-             ? WebAssembly::SP64
-             : WebAssembly::SP32;
+  return WebAssembly::HANDLE;
 }
 
 unsigned WebAssemblyFrameLowering::getFPReg(const MachineFunction &MF) {
@@ -148,11 +146,15 @@ unsigned WebAssemblyFrameLowering::getOpcAdd(const MachineFunction &MF) {
              : WebAssembly::ADD_I32;
 }
 
-unsigned WebAssemblyFrameLowering::getOpcSub(const MachineFunction &MF) {
-  return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
-             ? WebAssembly::SUB_I64
-             : WebAssembly::SUB_I32;
+unsigned WebAssemblyFrameLowering::getOpcHandleAdd(const MachineFunction &MF) {
+  return WebAssembly::HANDLE_ADD;
 }
+
+/*
+unsigned WebAssemblyFrameLowering::getOpcHandleSub(const MachineFunction &MF) {
+  return WebAssembly::HANDLE_SUB;
+}
+*/
 
 unsigned WebAssemblyFrameLowering::getOpcAnd(const MachineFunction &MF) {
   return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
@@ -167,11 +169,19 @@ WebAssemblyFrameLowering::getOpcGlobGet(const MachineFunction &MF) {
              : WebAssembly::GLOBAL_GET_I32;
 }
 
+unsigned WebAssemblyFrameLowering::getOpcGlobGetHandle(const MachineFunction &MF) {
+  return WebAssembly::GLOBAL_GET_HANDLE;
+}
+
 unsigned
 WebAssemblyFrameLowering::getOpcGlobSet(const MachineFunction &MF) {
   return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
              ? WebAssembly::GLOBAL_SET_I64
              : WebAssembly::GLOBAL_SET_I32;
+}
+
+unsigned WebAssemblyFrameLowering::getOpcGlobSetHandle(const MachineFunction &MF) {
+  return WebAssembly::GLOBAL_SET_HANDLE;
 }
 
 void WebAssemblyFrameLowering::writeSPToGlobal(
@@ -182,7 +192,7 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
   const char *ES = "__stack_pointer";
   auto *SPSymbol = MF.createExternalSymbolName(ES);
 
-  BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSet(MF)))
+  BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
       .addExternalSymbol(SPSymbol)
       .addReg(SrcReg);
 }
@@ -232,7 +242,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
 
   const char *ES = "__stack_pointer";
   auto *SPSymbol = MF.createExternalSymbolName(ES);
-  BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGet(MF)), SPReg)
+  BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
       .addExternalSymbol(SPSymbol);
 
   bool HasBP = hasBP(MF);
@@ -245,20 +255,24 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   }
   if (StackSize) {
     // Subtract the frame size
-    Register OffsetReg = MRI.createVirtualRegister(PtrRC);
+    const TargetRegisterClass *I32RC =
+        MRI.getTargetRegisterInfo()->getI32RegClass(MF);
+    Register OffsetReg = MRI.createVirtualRegister(I32RC);
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), OffsetReg)
-        .addImm(StackSize);
-    BuildMI(MBB, InsertPt, DL, TII->get(getOpcSub(MF)), getSPReg(MF))
+        .addImm(-(int64_t)StackSize);
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), SPReg)
         .addReg(SPReg)
         .addReg(OffsetReg);
   }
   if (HasBP) {
-    Register BitmaskReg = MRI.createVirtualRegister(PtrRC);
+    const TargetRegisterClass *I64RC =
+        MRI.getTargetRegisterInfo()->getI64RegClass(MF);
+    Register BitmaskReg = MRI.createVirtualRegister(I64RC);
     Align Alignment = MFI.getMaxAlign();
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), BitmaskReg)
         .addImm((int64_t) ~(Alignment.value() - 1));
-    BuildMI(MBB, InsertPt, DL, TII->get(getOpcAnd(MF)), getSPReg(MF))
-        .addReg(getSPReg(MF))
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcAnd(MF)), SPReg)
+        .addReg(SPReg)
         .addReg(BitmaskReg);
   }
   if (hasFP(MF)) {
@@ -266,10 +280,10 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // FP points to the bottom of the fixed-size locals, so we can use positive
     // offsets in load/store instructions.
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::COPY), getFPReg(MF))
-        .addReg(getSPReg(MF));
+        .addReg(SPReg);
   }
   if (StackSize && needsSPWriteback(MF)) {
-    writeSPToGlobal(getSPReg(MF), MF, MBB, InsertPt, DL);
+    writeSPToGlobal(SPReg, MF, MBB, InsertPt, DL);
   }
 }
 

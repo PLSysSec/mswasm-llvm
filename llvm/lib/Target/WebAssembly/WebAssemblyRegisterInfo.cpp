@@ -88,7 +88,8 @@ void WebAssemblyRegisterInfo::eliminateFrameIndex(
 
   // If this is an address being added to a constant, fold the frame offset
   // into the constant.
-  if (MI.getOpcode() == WebAssemblyFrameLowering::getOpcAdd(MF)) {
+  if (MI.getOpcode() == WebAssemblyFrameLowering::getOpcAdd(MF)
+      || MI.getOpcode() == WebAssemblyFrameLowering::getOpcHandleAdd(MF)) {
     MachineOperand &OtherMO = MI.getOperand(3 - FIOperandNum);
     if (OtherMO.isReg()) {
       Register OtherMOReg = OtherMO.getReg();
@@ -110,22 +111,24 @@ void WebAssemblyRegisterInfo::eliminateFrameIndex(
     }
   }
 
-  // Otherwise create an i32/64.add SP, offset and make it the operand.
+  // Otherwise create a handle.add SP, offset and make it the operand.
   const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
 
   unsigned FIRegOperand = FrameRegister;
   if (FrameOffset) {
-    // Create i32/64.add SP, offset and make it the operand.
+    // Create handle.add SP, offset and make it the operand.
     const TargetRegisterClass *PtrRC =
         MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
-    Register OffsetOp = MRI.createVirtualRegister(PtrRC);
+    const TargetRegisterClass *I32RC =
+        MRI.getTargetRegisterInfo()->getI32RegClass(MF);
+    Register OffsetOp = MRI.createVirtualRegister(I32RC);
     BuildMI(MBB, *II, II->getDebugLoc(),
             TII->get(WebAssemblyFrameLowering::getOpcConst(MF)),
             OffsetOp)
         .addImm(FrameOffset);
     FIRegOperand = MRI.createVirtualRegister(PtrRC);
     BuildMI(MBB, *II, II->getDebugLoc(),
-            TII->get(WebAssemblyFrameLowering::getOpcAdd(MF)),
+            TII->get(WebAssemblyFrameLowering::getOpcHandleAdd(MF)),
             FIRegOperand)
         .addReg(FrameRegister)
         .addReg(OffsetOp);
@@ -139,19 +142,22 @@ WebAssemblyRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const auto &MFI = MF.getInfo<WebAssemblyFunctionInfo>();
   if (MFI->isFrameBaseVirtual())
     return MFI->getFrameBaseVreg();
-  static const unsigned Regs[2][2] = {
-      /*            !isArch64Bit       isArch64Bit      */
-      /* !hasFP */ {WebAssembly::SP32, WebAssembly::SP64},
-      /*  hasFP */ {WebAssembly::FP32, WebAssembly::FP64}};
-  const WebAssemblyFrameLowering *TFI = getFrameLowering(MF);
-  return Regs[TFI->hasFP(MF)][TT.isArch64Bit()];
+  return WebAssembly::HANDLE;
 }
 
 const TargetRegisterClass *
 WebAssemblyRegisterInfo::getPointerRegClass(const MachineFunction &MF,
                                             unsigned Kind) const {
   assert(Kind == 0 && "Only one kind of pointer on WebAssembly");
-  if (MF.getSubtarget<WebAssemblySubtarget>().hasAddr64())
-    return &WebAssembly::I64RegClass;
+  return &WebAssembly::HANDLERegClass;
+}
+
+const TargetRegisterClass *
+WebAssemblyRegisterInfo::getI32RegClass(const MachineFunction &MF) const {
   return &WebAssembly::I32RegClass;
+}
+
+const TargetRegisterClass *
+WebAssemblyRegisterInfo::getI64RegClass(const MachineFunction &MF) const {
+  return &WebAssembly::I64RegClass;
 }
