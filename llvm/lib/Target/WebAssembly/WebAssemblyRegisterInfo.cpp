@@ -142,7 +142,12 @@ WebAssemblyRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const auto &MFI = MF.getInfo<WebAssemblyFunctionInfo>();
   if (MFI->isFrameBaseVirtual())
     return MFI->getFrameBaseVreg();
-  return WebAssembly::HANDLE;
+  static const unsigned Regs[2][2] = {
+      /*            !isArch64Bit       isArch64Bit      */
+      /* !hasFP */ {WebAssembly::SP32, WebAssembly::SP64},
+      /*  hasFP */ {WebAssembly::FP32, WebAssembly::FP64}};
+  const WebAssemblyFrameLowering *TFI = getFrameLowering(MF);
+  return Regs[TFI->hasFP(MF)][TT.isArch64Bit()];
 }
 
 const TargetRegisterClass *
