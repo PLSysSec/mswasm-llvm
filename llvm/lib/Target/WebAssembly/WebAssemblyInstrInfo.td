@@ -323,7 +323,7 @@ defm CONST_F64 : I<(outs F64:$res), (ins f64imm_op:$imm),
                    [(set F64:$res, fpimm:$imm)],
                    "f64.const\t$res, $imm", "f64.const\t$imm", 0x44>;
 defm HANDLE_NULL : I<(outs HANDLE:$res), (ins), (outs), (ins),
-                   [(set HANDLE:$res, 0)],
+                   [],
                    "handle.null\t$res", "handle.null", 0xfb>;
 } // isMoveImm = 1, isAsCheapAsAMove = 1, isReMaterializable = 1
 
