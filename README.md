@@ -1,3 +1,40 @@
+# MS-Wasm LLVM fork
+
+This is a fork of LLVM---or actually, a fork of the CHERI fork of
+LLVM---intended for producing MS-Wasm code.  Most of the changes
+are to the Wasm backend, located at `llvm/lib/Target/WebAssembly`.
+
+In general, no effort has been made to preserve ordinary WebAssembly
+functionality, or to avoid breaking other backends (e.g., X86); other
+backends probably do not even build currently.
+
+## Building
+
+To build, use the following:
+
+```
+cd llvm
+cmake -G Ninja -B build -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="WebAssembly" .
+cd build
+ninja
+```
+
+## Generating MS-Wasm
+
+You must have the [WASI SDK](https://github.com/WebAssembly/wasi-sdk)
+installed. We assume it's installed in `/opt/wasi-sdk`.
+
+```
+./llvm/build/bin/clang -O1 --target=wasm32-wasi --sysroot=/opt/wasi-sdk/share/wasi-sysroot foo.c -o foo.wasm
+```
+
+You can get loads of debug logging from LLVM by adding the following to the `clang` command:
+```
+-mllvm -print-before-all -mllvm -debug
+```
+
+Original (CHERI) readme follows.
+
 # The CHERI LLVM Compiler Infrastructure
 
 This directory and its sub-directories contain source code for LLVM,
