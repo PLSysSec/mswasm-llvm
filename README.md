@@ -19,6 +19,9 @@ cd build
 ninja
 ```
 
+Once you've built the first time, if you've made changes and want to rebuild,
+you don't have to run `cmake` again---just use `ninja`.
+
 ## Generating MS-Wasm
 
 You must have the [WASI SDK](https://github.com/WebAssembly/wasi-sdk)
