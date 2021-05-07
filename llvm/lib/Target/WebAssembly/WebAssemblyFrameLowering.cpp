@@ -124,7 +124,9 @@ bool WebAssemblyFrameLowering::needsSPWriteback(
 }
 
 unsigned WebAssemblyFrameLowering::getSPReg(const MachineFunction &MF) {
-  return WebAssembly::HANDLE;
+  return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
+             ? WebAssembly::SP64
+             : WebAssembly::SP32;
 }
 
 unsigned WebAssemblyFrameLowering::getFPReg(const MachineFunction &MF) {
@@ -260,7 +262,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     Register OffsetReg = MRI.createVirtualRegister(I32RC);
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), OffsetReg)
         .addImm(-(int64_t)StackSize);
-    BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), SPReg)
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), getSPReg(MF))
         .addReg(SPReg)
         .addReg(OffsetReg);
   }
@@ -271,8 +273,8 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     Align Alignment = MFI.getMaxAlign();
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), BitmaskReg)
         .addImm((int64_t) ~(Alignment.value() - 1));
-    BuildMI(MBB, InsertPt, DL, TII->get(getOpcAnd(MF)), SPReg)
-        .addReg(SPReg)
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcAnd(MF)), getSPReg(MF))
+        .addReg(getSPReg(MF))
         .addReg(BitmaskReg);
   }
   if (hasFP(MF)) {
@@ -280,10 +282,10 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // FP points to the bottom of the fixed-size locals, so we can use positive
     // offsets in load/store instructions.
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::COPY), getFPReg(MF))
-        .addReg(SPReg);
+        .addReg(getSPReg(MF));
   }
   if (StackSize && needsSPWriteback(MF)) {
-    writeSPToGlobal(SPReg, MF, MBB, InsertPt, DL);
+    writeSPToGlobal(getSPReg(MF), MF, MBB, InsertPt, DL);
   }
 }
 
@@ -309,16 +311,18 @@ void WebAssemblyFrameLowering::emitEpilogue(MachineFunction &MF,
     auto FI = MF.getInfo<WebAssemblyFunctionInfo>();
     SPReg = FI->getBasePointerVreg();
   } else if (StackSize) {
-    const TargetRegisterClass *PtrRC =
-        MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
-    Register OffsetReg = MRI.createVirtualRegister(PtrRC);
+    const TargetRegisterClass *I32RC =
+        MRI.getTargetRegisterInfo()->getI32RegClass(MF);
+    Register OffsetReg = MRI.createVirtualRegister(I32RC);
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), OffsetReg)
         .addImm(StackSize);
     // In the epilog we don't need to write the result back to the SP32/64
     // physreg because it won't be used again. We can use a stackified register
     // instead.
+    const TargetRegisterClass *PtrRC =
+        MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
     SPReg = MRI.createVirtualRegister(PtrRC);
-    BuildMI(MBB, InsertPt, DL, TII->get(getOpcAdd(MF)), SPReg)
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), SPReg)
         .addReg(SPFPReg)
         .addReg(OffsetReg);
   } else {
