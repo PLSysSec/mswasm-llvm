@@ -36,6 +36,14 @@ You can get loads of debug logging from LLVM by adding the following to the `cla
 -mllvm -print-before-all -mllvm -debug
 ```
 
+If you get a file not found error on the file `libclang_rt.builtins-wasm32.a` from the above command:
+
+You must also copy the `libclang_rt.builtins-wasm32.a` from `/opt/wasi-sdk` to wherever your "No such file or directory" error points to.
+
+```
+cp /opt/wasi-sdk/lib/clang/10.0.0/lib/wasi/libclang_rt.builtins-wasm32.a llvm/build/lib/clang/11.0.0/lib/wasi/libclang_rt.builtins-wasm32.a
+```
+
 Original (CHERI) readme follows.
 
 # The CHERI LLVM Compiler Infrastructure
