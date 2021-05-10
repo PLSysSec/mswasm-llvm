@@ -263,6 +263,7 @@ enum : unsigned {
   WASM_OPCODE_I32_ADD = 0x6a,
   WASM_OPCODE_I64_ADD = 0x7c,
   WASM_OPCODE_REF_NULL = 0xd0,
+  WASM_OPCODE_HANDLE_NULL = 0xfb,
 };
 
 // Opcodes used in synthetic functions.
@@ -360,9 +361,9 @@ enum class ValType {
   I64 = WASM_TYPE_I64,
   F32 = WASM_TYPE_F32,
   F64 = WASM_TYPE_F64,
-  HANDLE = WASM_TYPE_HANDLE,
   V128 = WASM_TYPE_V128,
   EXNREF = WASM_TYPE_EXNREF,
+  HANDLE = WASM_TYPE_HANDLE,
   EXTERNREF = WASM_TYPE_EXTERNREF,
 };
 
