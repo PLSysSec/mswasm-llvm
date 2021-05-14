@@ -34,6 +34,8 @@ std::string toString(ValType type) {
     return "exnref";
   case ValType::EXTERNREF:
     return "externref";
+  case ValType::HANDLE:
+    return "handle";
   }
   llvm_unreachable("Invalid wasm::ValType");
 }
@@ -160,6 +162,8 @@ void writeInitExpr(raw_ostream &os, const WasmInitExpr &initExpr) {
   case WASM_OPCODE_REF_NULL:
     writeValueType(os, ValType::EXTERNREF, "literal (externref type)");
     break;
+  case WASM_OPCODE_HANDLE_NULL:
+    writeValueType(os, ValType::HANDLE, "literal (handle type)");
   default:
     fatal("unknown opcode in init expr: " + Twine(initExpr.Opcode));
   }

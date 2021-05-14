@@ -14,7 +14,7 @@ To build, use the following:
 
 ```
 cd llvm
-cmake -G Ninja -B build -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="WebAssembly" .
+cmake -G Ninja -B build -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="WebAssembly" .
 cd build
 ninja
 ```
