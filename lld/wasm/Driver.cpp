@@ -528,7 +528,13 @@ createUndefinedGlobal(StringRef name, llvm::wasm::WasmGlobalType *type) {
 static GlobalSymbol *createGlobalVariable(StringRef name, bool isMutable,
                                           int value) {
   llvm::wasm::WasmGlobal wasmGlobal;
-  if (config->is64) {
+  if (name == "__stack_pointer") {
+    // like many other places around here, we special-case __stack_pointer
+    wasmGlobal.Type = {WASM_TYPE_HANDLE, isMutable};
+    wasmGlobal.InitExpr.Value.Handle = value;
+    wasmGlobal.InitExpr.Opcode = WASM_OPCODE_HANDLE_NULL;
+  }
+  else if (config->is64) {
     wasmGlobal.Type = {WASM_TYPE_I64, isMutable};
     wasmGlobal.InitExpr.Value.Int64 = value;
     wasmGlobal.InitExpr.Opcode = WASM_OPCODE_I64_CONST;
@@ -552,10 +558,8 @@ static void createSyntheticSymbols() {
   static WasmSignature i64ArgSignature = {{}, {ValType::I64}};
   static llvm::wasm::WasmGlobalType globalTypeI32 = {WASM_TYPE_I32, false};
   static llvm::wasm::WasmGlobalType globalTypeI64 = {WASM_TYPE_I64, false};
-  static llvm::wasm::WasmGlobalType mutableGlobalTypeI32 = {WASM_TYPE_I32,
-                                                            true};
-  static llvm::wasm::WasmGlobalType mutableGlobalTypeI64 = {WASM_TYPE_I64,
-                                                            true};
+  static llvm::wasm::WasmGlobalType mutableGlobalTypeHandle = {WASM_TYPE_HANDLE,
+                                                               true};
   WasmSym::callCtors = symtab->addSyntheticFunction(
       "__wasm_call_ctors", WASM_SYMBOL_VISIBILITY_HIDDEN,
       make<SyntheticFunction>(nullSignature, "__wasm_call_ctors"));
@@ -571,8 +575,7 @@ static void createSyntheticSymbols() {
 
   if (config->isPic) {
     WasmSym::stackPointer = createUndefinedGlobal(
-        "__stack_pointer",
-        config->is64 ? &mutableGlobalTypeI64 : &mutableGlobalTypeI32);
+        "__stack_pointer", &mutableGlobalTypeHandle);
     // For PIC code, we import two global variables (__memory_base and
     // __table_base) from the environment and use these as the offset at
     // which to load our static data and function table.

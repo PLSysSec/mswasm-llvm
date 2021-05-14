@@ -231,8 +231,11 @@ void Writer::layoutMemory() {
     case WASM_OPCODE_I64_CONST:
       sp->global->global.InitExpr.Value.Int64 = memoryPtr;
       break;
+    case WASM_OPCODE_HANDLE_NULL:
+      sp->global->global.InitExpr.Value.Handle = memoryPtr;
+      break;
     default:
-      llvm_unreachable("init expr must be i32/i64.const");
+      llvm_unreachable("init expr must be i32/i64.const or handle.null");
     }
     log("mem: stack top   = " + Twine(memoryPtr));
   };

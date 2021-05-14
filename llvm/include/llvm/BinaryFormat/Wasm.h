@@ -80,6 +80,7 @@ struct WasmInitExpr {
     uint32_t Float32;
     uint64_t Float64;
     uint32_t Global;
+    uint64_t Handle;
   } Value;
 };
 
