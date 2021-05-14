@@ -163,7 +163,8 @@ void writeInitExpr(raw_ostream &os, const WasmInitExpr &initExpr) {
     writeValueType(os, ValType::EXTERNREF, "literal (externref type)");
     break;
   case WASM_OPCODE_HANDLE_NULL:
-    writeValueType(os, ValType::HANDLE, "literal (handle type)");
+    //writeValueType(os, ValType::HANDLE, "literal (handle type)");
+    // we don't write anything? because the handle.null init expr won't take an argument?
     break;
   default:
     fatal("unknown opcode in init expr: " + Twine(initExpr.Opcode));

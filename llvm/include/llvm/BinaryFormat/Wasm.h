@@ -80,7 +80,7 @@ struct WasmInitExpr {
     uint32_t Float32;
     uint64_t Float64;
     uint32_t Global;
-    uint64_t Handle;
+    //uint64_t Handle; // actually, it doesn't make sense to allow InitExpr to have type Handle: we can't construct a constant Handle value to put in the Wasm binary
   } Value;
 };
 

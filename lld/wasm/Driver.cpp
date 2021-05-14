@@ -531,17 +531,17 @@ static GlobalSymbol *createGlobalVariable(StringRef name, bool isMutable,
   if (name == "__stack_pointer") {
     // like many other places around here, we special-case __stack_pointer
     wasmGlobal.Type = {WASM_TYPE_HANDLE, isMutable};
-    wasmGlobal.InitExpr.Value.Handle = value;
     wasmGlobal.InitExpr.Opcode = WASM_OPCODE_HANDLE_NULL;
+    //wasmGlobal.InitExpr.Value.Handle = value; // we don't set .Value for HANDLE_NULL
   }
   else if (config->is64) {
     wasmGlobal.Type = {WASM_TYPE_I64, isMutable};
-    wasmGlobal.InitExpr.Value.Int64 = value;
     wasmGlobal.InitExpr.Opcode = WASM_OPCODE_I64_CONST;
+    wasmGlobal.InitExpr.Value.Int64 = value;
   } else {
     wasmGlobal.Type = {WASM_TYPE_I32, isMutable};
-    wasmGlobal.InitExpr.Value.Int32 = value;
     wasmGlobal.InitExpr.Opcode = WASM_OPCODE_I32_CONST;
+    wasmGlobal.InitExpr.Value.Int32 = value;
   }
   wasmGlobal.SymbolName = name;
   return symtab->addSyntheticGlobal(name, WASM_SYMBOL_VISIBILITY_HIDDEN,
