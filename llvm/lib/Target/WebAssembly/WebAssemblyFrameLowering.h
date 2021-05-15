@@ -60,6 +60,7 @@ public:
   static unsigned getOpcSub(const MachineFunction &MF);
   static unsigned getOpcHandleAdd(const MachineFunction &MF);
   //static unsigned getOpcHandleSub(const MachineFunction &MF);
+  static unsigned getOpcNewSegment(const MachineFunction &MF);
   static unsigned getOpcAnd(const MachineFunction &MF);
   static unsigned getOpcGlobGet(const MachineFunction &MF);
   static unsigned getOpcGlobSet(const MachineFunction &MF);

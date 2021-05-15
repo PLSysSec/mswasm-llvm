@@ -327,6 +327,15 @@ defm HANDLE_NULL : I<(outs HANDLE:$res), (ins), (outs), (ins),
                    "handle.null\t$res", "handle.null", 0xfb>;
 } // isMoveImm = 1, isAsCheapAsAMove = 1, isReMaterializable = 1
 
+defm NEW_SEGMENT : I<(outs HANDLE:$res), (ins i32imm_op:$imm),
+                     (outs), (ins i32imm_op:$imm),
+                     [],
+                     "new_segment\t$res, $imm", "new_segment\t$imm", 0xf4>;
+defm FREE_SEGMENT : I<(outs), (ins HANDLE:$addr),
+                      (outs), (ins HANDLE:$addr),
+                      [],
+                      "free_segment\t$addr", "free_segment\t$addr", 0xf5>;
+
 def : Pat<(i32 (WebAssemblywrapper tglobaladdr:$addr)),
           (CONST_I32 tglobaladdr:$addr)>, Requires<[IsNotPIC]>;
 

@@ -158,6 +158,10 @@ unsigned WebAssemblyFrameLowering::getOpcHandleSub(const MachineFunction &MF) {
 }
 */
 
+unsigned WebAssemblyFrameLowering::getOpcNewSegment(const MachineFunction &MF) {
+  return WebAssembly::NEW_SEGMENT;
+}
+
 unsigned WebAssemblyFrameLowering::getOpcAnd(const MachineFunction &MF) {
   return MF.getSubtarget<WebAssemblySubtarget>().hasAddr64()
              ? WebAssembly::AND_I64
@@ -236,14 +240,33 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     ++InsertPt;
   DebugLoc DL;
 
+  // kinda ugly and there's probably a better place to do this, but here works.
+  // For the main() function specifically, inject instructions at the top of
+  // main() to allocate the stack and store the handle in the appropriate
+  // global.
+  if (MF.getFunction().getName() == "main") {
+    const uint64_t ALLOCATED_STACK_SIZE_BYTES = 2 * 1024 * 1024; // we arbitrary choose to allocate 2MB for the stack
+    const TargetRegisterClass *I32RC =
+        MRI.getTargetRegisterInfo()->getI32RegClass(MF);
+    Register stack_size_bytes = MRI.createVirtualRegister(I32RC);
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), stack_size_bytes)
+      .addImm(ALLOCATED_STACK_SIZE_BYTES);
+    const TargetRegisterClass *PtrRC =
+      MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
+    Register temp_stackptr = MRI.createVirtualRegister(PtrRC);
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcNewSegment(MF)), temp_stackptr)
+      .addReg(stack_size_bytes);
+    writeSPToGlobal(temp_stackptr, MF, MBB, InsertPt, DL);
+  }
+
   const TargetRegisterClass *PtrRC =
       MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
   unsigned SPReg = getSPReg(MF);
   if (StackSize)
     SPReg = MRI.createVirtualRegister(PtrRC);
 
-  const char *ES = "__stack_pointer";
-  auto *SPSymbol = MF.createExternalSymbolName(ES);
+  const char *SPSymbolName = "__stack_pointer";
+  auto *SPSymbol = MF.createExternalSymbolName(SPSymbolName);
   BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
       .addExternalSymbol(SPSymbol);
 
