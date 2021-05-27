@@ -11122,6 +11122,8 @@ uint64_t ASTContext::getTargetNullPointerValue(QualType QT) const {
 }
 
 unsigned ASTContext::getTargetAddressSpace(LangAS AS) const {
+  return 200;
+  /*
   if (isTargetAddressSpace(AS)) {
     return toTargetAddressSpace(AS);
   }
@@ -11130,6 +11132,7 @@ unsigned ASTContext::getTargetAddressSpace(LangAS AS) const {
     return 200; // Hack for CHERI purecap ABI where we want default to mean AS200
   }
   return (*AddrSpaceMap)[(unsigned)AS];
+  */
 }
 
 bool ASTContext::containsCapabilities(const RecordDecl *RD) const {

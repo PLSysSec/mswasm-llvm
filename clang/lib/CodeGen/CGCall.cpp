@@ -1737,6 +1737,12 @@ CodeGenTypes::GetFunctionType(const CGFunctionInfo &FI) {
   bool Erased = FunctionsBeingProcessed.erase(&FI); (void)Erased;
   assert(Erased && "Not in set?");
 
+  for (auto& at : ArgTypes) {
+    if (at->isPointerTy()) {
+      assert(cast<llvm::PointerType>(at)->getAddressSpace() == 200);
+    }
+  }
+
   return llvm::FunctionType::get(resultType, ArgTypes, FI.isVariadic());
 }
 
