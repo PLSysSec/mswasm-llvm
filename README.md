@@ -5,8 +5,8 @@ LLVM---intended for producing MS-Wasm code.  Most of the changes
 are to the Wasm backend, located at `llvm/lib/Target/WebAssembly`.
 
 In general, no effort has been made to preserve ordinary WebAssembly
-functionality, or to avoid breaking other backends (e.g., X86); other
-backends probably do not even build currently.
+functionality, and only minimal effort has been made to avoid breaking other
+backends (e.g., X86); other backends probably do not even build currently.
 
 ## Building
 
