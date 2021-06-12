@@ -19,6 +19,11 @@ cd build
 ninja
 ```
 
+For a release (optimized) build, you can add `-DCMAKE_BUILD_TYPE=Release` or
+`-DCMAKE_BUILD_TYPE=RelWithDebInfo` to the `cmake` command. If you do either of
+these, you may want to also re-enable assertions with
+`-DLLVM_ENABLE_ASSERTIONS=1`.
+
 Once you've built the first time, if you've made changes and want to rebuild,
 you don't have to run `cmake` again---just use `ninja`.
 
