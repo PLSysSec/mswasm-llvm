@@ -1211,8 +1211,8 @@ SDValue WebAssemblyTargetLowering::LowerGlobalAddress(SDValue Op,
   EVT VT = Op.getValueType();
   assert(GA->getTargetFlags() == 0 &&
          "Unexpected target flags on generic GlobalAddressSDNode");
-  if (GA->getAddressSpace() != 0)
-    fail(DL, DAG, "WebAssembly only expects the 0 address space");
+  if (GA->getAddressSpace() != 200)
+    fail(DL, DAG, "MS-Wasm only expects the 200 address space");
 
   unsigned OperandFlags = 0;
   if (isPositionIndependent()) {
