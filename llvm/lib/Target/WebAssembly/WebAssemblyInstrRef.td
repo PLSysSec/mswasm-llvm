@@ -30,7 +30,7 @@ defm SELECT_HANDLE : I<(outs HANDLE:$dst),
                        [(set HANDLE:$dst,
                          (select I32:$cond, HANDLE:$lhs, HANDLE:$rhs))],
                        "handle.select\t$dst, $lhs, $rhs, $cond",
-                       "handle.select", 0xfb>; // TODO choose an actual opcode for this
+                       "handle.select", 0x1b>;
 
 def : Pat<(select (i32 (setne I32:$cond, 0)), HANDLE:$lhs, HANDLE:$rhs),
           (SELECT_HANDLE HANDLE:$lhs, HANDLE:$rhs, I32:$cond)>;
