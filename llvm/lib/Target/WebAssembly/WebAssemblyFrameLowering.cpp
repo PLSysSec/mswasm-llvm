@@ -256,7 +256,13 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     Register temp_stackptr = MRI.createVirtualRegister(PtrRC);
     BuildMI(MBB, InsertPt, DL, TII->get(getOpcNewSegment(MF)), temp_stackptr)
       .addReg(stack_size_bytes);
-    writeSPToGlobal(temp_stackptr, MF, MBB, InsertPt, DL);
+    // since the stack grows down (towards 0), we actually need to initialize
+    // the stack pointer at the "end" (high end) of the allocated segment
+    Register high_stackptr = MRI.createVirtualRegister(PtrRC);
+    BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), high_stackptr)
+      .addReg(temp_stackptr)
+      .addReg(stack_size_bytes);
+    writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
   }
 
   const TargetRegisterClass *PtrRC =
