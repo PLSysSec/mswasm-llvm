@@ -14,7 +14,7 @@ To build, use the following:
 
 ```
 cd llvm
-cmake -G Ninja -B build -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="WebAssembly" .
+cmake -G Ninja -B build -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt" -DLLVM_TARGETS_TO_BUILD="WebAssembly" .
 cd build
 ninja
 ```
@@ -27,13 +27,25 @@ these, you may want to also re-enable assertions with
 Once you've built the first time, if you've made changes and want to rebuild,
 you don't have to run `cmake` again---just use `ninja`.
 
+## Compiling WASI libc to MS-Wasm
+
+You will need [our fork of wasi-libc](https://github.com/PLSysSec/mswasm-wasi-libc).
+
+Use the `clang` you just built to build WASI libc for MS-Wasm.
+```
+export MSWASM_LLVM_BUILD=/path/to/mswasm-llvm/llvm/build
+cd /path/to/mswasm-wasi-libc
+make -jwhatever \
+  WASM_CC=$MSWASM_LLVM_BUILD/bin/clang \
+  WASM_AR=$MSWASM_LLVM_BUILD/bin/llvm-ar \
+  WASM_NM=$MSWASM_LLVM_BUILD/bin/llvm-nm
+```
+
 ## Generating MS-Wasm
 
-You must have the [WASI SDK](https://github.com/WebAssembly/wasi-sdk)
-installed. We assume it's installed in `/opt/wasi-sdk`.
-
+Then, use the `clang` built here, with whatever options you want, adding these `--target` and `--sysroot` options: (For example:)
 ```
-./llvm/build/bin/clang -O1 --target=wasm32-wasi --sysroot=/opt/wasi-sdk/share/wasi-sysroot foo.c -o foo.wasm
+./llvm/build/bin/clang -O1 --target=wasm32-wasi --sysroot=/path/to/mswasm-wasi-libc/sysroot foo.c -o foo.wasm
 ```
 
 You can get loads of debug logging from LLVM by adding the following to the `clang` command:
@@ -42,10 +54,10 @@ You can get loads of debug logging from LLVM by adding the following to the `cla
 ```
 
 If you get a file-not-found error on the file `libclang_rt.builtins-wasm32.a` from the above command:
-* Copy `libclang_rt.builtins-wasm32.a` from `/opt/wasi-sdk` to wherever your "No such file or directory" error points to.
+* Copy `libclang_rt.builtins-wasm32.a` from [TODO: WHERE??? now that we have our own wasi sysroot] to wherever your "No such file or directory" error points to.
 E.g.,
 ```
-cp /opt/wasi-sdk/lib/clang/10.0.0/lib/wasi/libclang_rt.builtins-wasm32.a llvm/build/lib/clang/11.0.0/lib/wasi/libclang_rt.builtins-wasm32.a
+cp /some/path/to/lib/wasi/libclang_rt.builtins-wasm32.a llvm/build/lib/clang/11.0.0/lib/wasi/libclang_rt.builtins-wasm32.a
 ```
 
 ## Viewing or analyzing MS-Wasm code
