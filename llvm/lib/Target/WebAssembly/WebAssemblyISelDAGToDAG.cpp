@@ -255,6 +255,8 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       // Instead, looking at how the stack-pointer global is currently used in WebAssemblyFrameLowering.cpp (search for "__stack_pointer"),
       // maybe we can refer to globals based on their export name (symbol name) instead of by index -- we probably don't want to
       // have to assign indexes yet at this point in the pipeline
+      // For now, just to get things to compile, we hardcode the constant 999
+      const SDValue GlobIndexSDV = CurDAG->getConstant(999, DL, MVT::i32);
       MachineSDNode *GlobalGetNode = CurDAG->getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, GlobIndexSDV);
       ReplaceNode(Node, GlobalGetNode);
       return;
