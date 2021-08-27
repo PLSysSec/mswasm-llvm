@@ -117,7 +117,8 @@ void WebAssemblyMCCodeEmitter::encodeInstruction(
           support::endian::write<uint64_t>(OS, MO.getImm(), support::little);
           break;
         case WebAssembly::OPERAND_GLOBAL:
-          llvm_unreachable("wasm globals should only be accessed symbolicly");
+          support::endian::write<uint32_t>(OS, MO.getImm(), support::little);
+          break;
         default:
           encodeULEB128(uint64_t(MO.getImm()), OS);
         }

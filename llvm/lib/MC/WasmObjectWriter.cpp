@@ -1450,7 +1450,8 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       LLVM_DEBUG(dbgs() << "  -> segment index: " << Ref.Segment << "\n");
 
     } else if (WS.isGlobal()) {
-      // A "true" Wasm global (currently just __stack_pointer)
+      // A "true" Wasm global (currently just __stack_pointer, but MS-Wasm also
+      // has Wasm globals of type handle for certain LLVM globals)
       if (WS.isDefined()) {
         assert(WasmIndices.count(&WS) == 0);
         wasm::WasmGlobal Global;
