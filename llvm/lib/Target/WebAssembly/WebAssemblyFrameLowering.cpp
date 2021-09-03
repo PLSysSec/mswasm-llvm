@@ -284,8 +284,8 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // store the handle to the allocated stack in the appropriate global
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
-    const WebAssemblyTargetMachine &TM =
-      dynamic_cast<const WebAssemblyTargetMachine&>(MF.getTarget());
+    // TODO: how do we get the target machine with correct typing?
+    // const WebAssemblyTargetMachine &TM = dynamic_cast<const WebAssemblyTargetMachine&>(MF.getTarget());
     for (const GlobalValue *global : TM.Globals) {
       writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
     }
