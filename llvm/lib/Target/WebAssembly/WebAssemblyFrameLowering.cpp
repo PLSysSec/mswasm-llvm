@@ -285,7 +285,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
     const WebAssemblyTargetMachine &TM =
-      dynamic_cast<WebAssemblyTargetMachine&>(MF.getTarget());
+      dynamic_cast<const WebAssemblyTargetMachine&>(MF.getTarget());
     for (const GlobalValue *global : TM.Globals) {
       writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
     }
