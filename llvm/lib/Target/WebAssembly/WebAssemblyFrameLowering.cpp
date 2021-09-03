@@ -204,8 +204,9 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
 }
 
 void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
-    GlobalValue *Global, unsigned SrcReg, MachineFunction &MF, MachineBasicBlock &MBB,
-    MachineBasicBlock::iterator &InsertStore, const DebugLoc &DL) const {
+    const GlobalValue *Global, unsigned SrcReg, MachineFunction &MF,
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator &InsertStore,
+    const DebugLoc &DL) const {
   const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
 
   const char *GlobalName = GV->getGlobalIdentifier().c_str();
