@@ -54,7 +54,7 @@ public:
                        const DebugLoc &DL) const;
 
   /// Write a global address to corresponding named global.
-  void writeGlobalAddrToGlobal(const GlobalValue *Global, unsigned SrcReg,
+  void writeGlobalAddrToGlobal(const GlobalValue *GV, unsigned SrcReg,
                                MachineFunction &MF, MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator &InsertStore,
                                const DebugLoc &DL) const;

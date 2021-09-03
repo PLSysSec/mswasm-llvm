@@ -204,7 +204,7 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
 }
 
 void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
-    const GlobalValue *Global, unsigned SrcReg, MachineFunction &MF,
+    const GlobalValue *GV, unsigned SrcReg, MachineFunction &MF,
     MachineBasicBlock &MBB, MachineBasicBlock::iterator &InsertStore,
     const DebugLoc &DL) const {
   const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
@@ -284,8 +284,8 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // store the handle to the allocated stack in the appropriate global
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
-    const WebAssemblyTargetMachine &TM = MF.getTarget();
-    for (const GlobalValue *global : TM.Globals) {
+    const WebAssemblyTargetMachine TM = MF.getTarget();
+    for (const GlobalValue *global : TM->Globals) {
       writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
     }
   }
