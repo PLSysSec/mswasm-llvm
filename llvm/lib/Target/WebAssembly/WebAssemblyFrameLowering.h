@@ -53,6 +53,12 @@ public:
                        MachineBasicBlock::iterator &InsertStore,
                        const DebugLoc &DL) const;
 
+  /// Write a global address to corresponding named global.
+  void writeGlobalAddrToGlobal(GlobalValue *Global, unsigned SrcReg,
+                               MachineFunction &MF, MachineBasicBlock &MBB,
+                               MachineBasicBlock::iterator &InsertStore,
+                               const DebugLoc &DL);
+
   static unsigned getSPReg(const MachineFunction &MF);
   static unsigned getFPReg(const MachineFunction &MF);
   static unsigned getOpcConst(const MachineFunction &MF);
