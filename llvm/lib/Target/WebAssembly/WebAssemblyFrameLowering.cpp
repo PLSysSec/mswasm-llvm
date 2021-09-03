@@ -283,8 +283,8 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // store the handle to the allocated stack in the appropriate global
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
-    WebAssemblyTargetMachine &TM = MF.Target;
-    for (GlobalValue *global : TM.Globals) {
+    WebAssemblyTargetMachine &TM = MF.getTarget();
+    for (const GlobalValue *global : TM.Globals) {
       writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
     }
   }
