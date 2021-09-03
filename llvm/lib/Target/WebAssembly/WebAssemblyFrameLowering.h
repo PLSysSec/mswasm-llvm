@@ -57,7 +57,7 @@ public:
   void writeGlobalAddrToGlobal(const GlobalValue *Global, unsigned SrcReg,
                                MachineFunction &MF, MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator &InsertStore,
-                               const DebugLoc &DL);
+                               const DebugLoc &DL) const;
 
   static unsigned getSPReg(const MachineFunction &MF);
   static unsigned getFPReg(const MachineFunction &MF);
