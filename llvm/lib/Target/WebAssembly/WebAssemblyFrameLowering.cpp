@@ -203,6 +203,19 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
       .addReg(SrcReg);
 }
 
+void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
+    GlobalValue *Global, unsigned SrcReg, MachineFunction &MF, MachineBasicBlock &MBB,
+    MachineBasicBlock::iterator &InsertStore, const DebugLoc &DL) const {
+  const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
+
+  const char *GlobalName = GV->getGlobalIdentifier().c_str();
+  auto *GlobalSymbol = MF.createExternalSymbolName(GlobalName);
+
+  BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
+      .addExternalSymbol(GlobalSymbol)
+      .addReg(SrcReg);
+}
+
 MachineBasicBlock::iterator
 WebAssemblyFrameLowering::eliminateCallFramePseudoInstr(
     MachineFunction &MF, MachineBasicBlock &MBB,
@@ -270,7 +283,10 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // store the handle to the allocated stack in the appropriate global
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
-    // (TODO)
+    WebAssemblyTargetMachine &TM = MF.Target;
+    for (GlobalValue *global : TM.Globals) {
+      writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
+    }
   }
 
   const TargetRegisterClass *PtrRC =
