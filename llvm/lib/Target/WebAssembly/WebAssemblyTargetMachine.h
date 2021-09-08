@@ -34,8 +34,6 @@ public:
 
   ~WebAssemblyTargetMachine() override;
 
-  SmallDenseSet<const GlobalValue*, 4> Globals;
-
   const WebAssemblySubtarget *getSubtargetImpl(std::string CPU,
                                                std::string FS) const;
   const WebAssemblySubtarget *

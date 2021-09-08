@@ -19,6 +19,7 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/ADT/DenseSet.h"
 #include <string>
 
 namespace llvm {
@@ -344,6 +345,9 @@ protected: // Can only create subclasses.
   void initAsmInfo();
 
 public:
+
+  SmallDenseSet<const GlobalValue*, 4> Globals;
+
   /// Get a TargetTransformInfo implementation for the target.
   ///
   /// The TTI returned uses the common code generator to answer queries about
