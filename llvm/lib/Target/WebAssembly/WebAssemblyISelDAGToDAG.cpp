@@ -37,7 +37,7 @@ class WebAssemblyDAGToDAGISel final : public SelectionDAGISel {
   const WebAssemblySubtarget *Subtarget;
 
   /// We keep a pointer to the `WebAssemblyTargetMachine`, where we store the
-  /// `GlobalsMap`
+  /// `Globals`
   WebAssemblyTargetMachine &TM;
 
 public:

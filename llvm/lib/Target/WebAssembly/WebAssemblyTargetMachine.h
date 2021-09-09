@@ -16,7 +16,6 @@
 #define LLVM_LIB_TARGET_WEBASSEMBLY_WEBASSEMBLYTARGETMACHINE_H
 
 #include "WebAssemblySubtarget.h"
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
