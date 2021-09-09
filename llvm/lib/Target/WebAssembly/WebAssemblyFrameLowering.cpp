@@ -284,10 +284,16 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     // store the handle to the allocated stack in the appropriate global
     writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
     // now do other LLVM globals
-    // TODO: how do we get the target machine with correct typing?
     const LLVMTargetMachine &TM = MF.getTarget();
     for (const GlobalValue *global : TM.Globals) {
-      writeGlobalAddrToGlobal(global, high_stackptr, MF, MBB, InsertPt, DL);
+      const uint64_t global_size_bytes = MF.getDataLayout().getTypeStoreSize(global->getType()).getFixedSize();
+      Register global_size_bytes_const = MRI.createVirtualRegister(I32RC);
+      BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), global_size_bytes_const)
+        .addImm(global_size_bytes);
+      Register globalptr = MRI.createVirtualRegister(PtrRC);
+      BuildMI(MBB, InsertPt, DL, TII->get(getOpcNewSegment(MF)), globalptr)
+        .addReg(global_size_bytes_const);
+      writeGlobalAddrToGlobal(global, globalptr, MF, MBB, InsertPt, DL);
     }
   }
 
