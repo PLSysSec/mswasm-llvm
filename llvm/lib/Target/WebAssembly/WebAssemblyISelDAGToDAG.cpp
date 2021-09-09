@@ -245,16 +245,10 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       assert(GA->getOffset() == 0); // later we can handle this by emitting both global.get and handle.add
       const GlobalValue* GV = GA->getGlobal();
       LLVM_DEBUG(dbgs() << "TargetGlobalAddress is getting the address of " << GV->getName() << "\n");
+      // At this point in the pipeline we refer to globals based on their export
+      // name (symbol name) instead of by index. We also keep a list of globals
+      // in TM.Globals.
       TM.Globals.insert(GV);
-      //const uint64_t GlobIndex = TM.GlobalsMap.lookup(GV);
-      //const SDValue GlobIndexSDV = CurDAG->getConstant(GlobIndex, DL, MVT::i32); // SDValue(CurDAG->getMachineNode(WebAssembly::CONST_I32, DL, MVT::i32, GlobIndex), 0);
-      // The sticking point here is what the argument to the GLOBAL_GET_HANDLE needs to be.
-      // My initial idea was to have `TM.GlobalsMap` map each GlobalValue* to the index of the Wasm global holding the handle to it.
-      // That might work, but I'm not sure how to know which Wasm global indices are available, or how we can ensure that
-      // each global is assigned the correct global index at the end.
-      // Instead, looking at how the stack-pointer global is currently used in WebAssemblyFrameLowering.cpp (search for "__stack_pointer"),
-      // maybe we can refer to globals based on their export name (symbol name) instead of by index -- we probably don't want to
-      // have to assign indexes yet at this point in the pipeline
       const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(GV->getGlobalIdentifier().c_str(), MVT::i32);
       MachineSDNode *GlobalGetNode = CurDAG->getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, GlobSymbol);
       ReplaceNode(Node, GlobalGetNode);

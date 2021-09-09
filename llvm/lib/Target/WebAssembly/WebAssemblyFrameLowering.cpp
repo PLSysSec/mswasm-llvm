@@ -213,7 +213,7 @@ void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
   auto *GlobalSymbol = MF.createExternalSymbolName(GlobalName);
 
   BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
-      .addExternalSymbol(GlobalSymbol)
+      .addExternalSymbol(GlobalSymbol, /* TargetFlags= */ 1)
       .addReg(SrcReg);
 }
 

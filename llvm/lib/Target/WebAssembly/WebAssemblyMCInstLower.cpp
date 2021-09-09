@@ -64,6 +64,19 @@ WebAssemblyMCInstLower::GetGlobalAddressSymbol(const MachineOperand &MO) const {
   return WasmSym;
 }
 
+// This is like GetExternalSymbolSymbol, but meant for the new MSWasm globals
+// (which all have type handle)
+MCSymbol *WebAssemblyMCInstLower::GetExternalGlobalSymbol(
+    const MachineOperand &MO) const {
+  const char *Name = MO.getSymbolName();
+  auto *WasmSym = cast<MCSymbolWasm>(Printer.GetExternalSymbolSymbol(Name));
+  WasmSym->setType(wasm::WASM_SYMBOL_TYPE_GLOBAL);
+  WasmSym->setGlobalType(wasm::WasmGlobalType{wasm::WASM_TYPE_HANDLE, true});
+  return WasmSym;
+}
+
+// This method is used for the Wasm globals that already existed in the "old"
+// (non-MSWasm) Wasm backend
 MCSymbol *WebAssemblyMCInstLower::GetExternalSymbolSymbol(
     const MachineOperand &MO) const {
   const char *Name = MO.getSymbolName();
@@ -291,11 +304,31 @@ void WebAssemblyMCInstLower::lower(const MachineInstr *MI,
       MCOp = lowerSymbolOperand(MO, GetGlobalAddressSymbol(MO));
       break;
     case MachineOperand::MO_ExternalSymbol:
-      // The target flag indicates whether this is a symbol for a
-      // variable or a function.
-      assert(MO.getTargetFlags() == 0 &&
-             "WebAssembly uses only symbol flags on ExternalSymbols");
-      MCOp = lowerSymbolOperand(MO, GetExternalSymbolSymbol(MO));
+      // TargetFlags==1 means a "new" MSWasm global.
+      // TargetFlags==0 means a global which already existed in the "old"
+      // (non-MSWasm) Wasm backend.
+      // For now, it's an absolute hack, but we "cheat" and assume that
+      // any Wasm global_get or global_set instruction with handle type is
+      // either for a "new" MSWasm global or the stack pointer, rather than
+      // figure out how to set TargetFlags==1 correctly in all cases. It just so
+      // happens that GetExternalGlobalSymbol() works just fine for the MSWasm
+      // stack pointer as well.
+      switch (MO.getTargetFlags()) {
+        case 0:
+          if (MI->getOpcode() == WebAssembly::GLOBAL_GET_HANDLE
+            || MI->getOpcode() == WebAssembly::GLOBAL_SET_HANDLE) {
+              // this is the hack described above
+              MCOp = lowerSymbolOperand(MO, GetExternalGlobalSymbol(MO));
+            } else {
+              MCOp = lowerSymbolOperand(MO, GetExternalSymbolSymbol(MO));
+            }
+          break;
+        case 1:
+          MCOp = lowerSymbolOperand(MO, GetExternalGlobalSymbol(MO));
+          break;
+        default:
+          llvm_unreachable("Expected TargetFlags to be either 0 or 1");
+      }
       break;
     case MachineOperand::MO_MCSymbol:
       // This is currently used only for LSDA symbols (GCC_except_table),

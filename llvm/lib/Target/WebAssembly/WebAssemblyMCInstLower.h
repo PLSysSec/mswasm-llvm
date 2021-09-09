@@ -32,7 +32,15 @@ class LLVM_LIBRARY_VISIBILITY WebAssemblyMCInstLower {
   WebAssemblyAsmPrinter &Printer;
 
   MCSymbol *GetGlobalAddressSymbol(const MachineOperand &MO) const;
+
+  // This is like GetExternalSymbolSymbol, but meant for the new MSWasm globals
+  // (which all have type handle)
+  MCSymbol *GetExternalGlobalSymbol(const MachineOperand &MO) const;
+
+  // This method is used for the Wasm globals that already existed in the "old"
+  // (non-MSWasm) Wasm backend
   MCSymbol *GetExternalSymbolSymbol(const MachineOperand &MO) const;
+
   MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym) const;
   MCOperand lowerTypeIndexOperand(SmallVector<wasm::ValType, 1> &&,
                                   SmallVector<wasm::ValType, 4> &&) const;
