@@ -192,6 +192,10 @@ static Error readInitExpr(wasm::WasmInitExpr &Expr,
     }
     break;
   }
+  case wasm::WASM_OPCODE_HANDLE_NULL:
+    // read and discard the argument, it's unused
+    readVarint64(Ctx);
+    break;
   default:
     return make_error<GenericBinaryError>("Invalid opcode in init_expr",
                                           object_error::parse_failed);

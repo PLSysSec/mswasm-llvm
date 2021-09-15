@@ -232,7 +232,7 @@ void Writer::layoutMemory() {
       sp->global->global.InitExpr.Value.Int64 = memoryPtr;
       break;
     case WASM_OPCODE_HANDLE_NULL:
-      //sp->global->global.InitExpr.Value.Handle = memoryPtr; // we don't/can't set the Value to any particular value, because we can't specify a constant Handle value in the Wasm binary. Eventually we need to inject Wasm instructions to allocate a stack and store the resulting pointer to the __stack_pointer global.
+      //sp->global->global.InitExpr.Value.Handle = memoryPtr; // we don't/can't set the Value to any particular value, because we can't specify a constant Handle value in the Wasm binary
       break;
     default:
       llvm_unreachable("init expr must be i32/i64.const or handle.null");
