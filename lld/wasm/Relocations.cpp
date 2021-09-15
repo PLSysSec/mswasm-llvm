@@ -33,8 +33,17 @@ static bool allowUndefined(const Symbol* sym) {
 static void reportUndefined(const Symbol* sym) {
   assert(sym->isUndefined());
   assert(!sym->isWeak());
+  /* MS-Wasm: currently we just comment this out to allow undefined symbols
+    * (for globals). Eventually we should figure out how to uncomment this
+    * without causing problems */
+  /*
   if (!allowUndefined(sym))
     error(toString(sym->getFile()) + ": undefined symbol: " + toString(*sym));
+  */
+  /* MS-Wasm: instead, a warning */
+  if (!allowUndefined(sym)) {
+    LLVM_DEBUG(dbgs() << "warning: " << toString(sym->getFile()) << ": undefined symbol: " << toString(*sym));
+  }
 }
 
 static void addGOTEntry(Symbol *sym) {

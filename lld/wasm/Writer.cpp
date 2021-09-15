@@ -565,11 +565,14 @@ void Writer::calculateExports() {
       // TODO(sbc): Remove this check once to mutable global proposal is
       // implement in all major browsers.
       // See: https://github.com/WebAssembly/mutable-global
+      // MSWasm: allow mutable globals, so we comment out this check
+      /*
       if (g->getGlobalType()->Mutable) {
         // Only __stack_pointer and __tls_base should ever be create as mutable.
         assert(g == WasmSym::stackPointer || g == WasmSym::tlsBase);
         continue;
       }
+      */
       export_ = {name, WASM_EXTERNAL_GLOBAL, g->getGlobalIndex()};
     } else if (auto *e = dyn_cast<DefinedEvent>(sym)) {
       export_ = {name, WASM_EXTERNAL_EVENT, e->getEventIndex()};
