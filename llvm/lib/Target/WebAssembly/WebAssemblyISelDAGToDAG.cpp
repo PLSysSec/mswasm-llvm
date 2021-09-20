@@ -249,7 +249,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       // name (symbol name) instead of by index. We also keep a list of globals
       // in TM.Globals.
       TM.Globals.insert(GV);
-      const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(GV->getGlobalIdentifier().c_str(), MVT::i32);
+      const char* globname = GV->getGlobalIdentifier().c_str();
+      assert(globname && strlen(globname) > 0 && "global should have a non-empty name");
+      const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(globname, MVT::i32);
       MachineSDNode *GlobalGetNode = CurDAG->getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, GlobSymbol);
       ReplaceNode(Node, GlobalGetNode);
       return;
