@@ -8703,9 +8703,10 @@ void SelectionDAG::ReplaceAllUsesWith(SDValue FromN, SDValue To) {
 void SelectionDAG::ReplaceAllUsesWith(SDNode *From, SDNode *To) {
 #ifndef NDEBUG
   for (unsigned i = 0, e = From->getNumValues(); i != e; ++i)
-    assert((!From->hasAnyUseOfValue(i) ||
-            From->getValueType(i) == To->getValueType(i)) &&
-           "Cannot use this version of ReplaceAllUsesWith!");
+    // Removing this to allow HANDLE_NULL to replace INTTOPTR
+    // assert((!From->hasAnyUseOfValue(i) ||
+    //         From->getValueType(i) == To->getValueType(i)) &&
+    //        "Cannot use this version of ReplaceAllUsesWith!");
 #endif
 
   // Handle the trivial case.
