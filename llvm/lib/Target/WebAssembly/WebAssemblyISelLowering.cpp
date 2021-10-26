@@ -119,6 +119,9 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
         setOperationAction(Op, T, Expand);
   }
 
+  // Unavailable pointer conversion
+  setOperationAction(ISD::INTTOPTR, MVT::iFATPTR64, Custom);
+
   // SIMD-specific configuration
   if (Subtarget->hasSIMD128()) {
     // Hoist bitcasts out of shuffles
@@ -1090,6 +1093,8 @@ SDValue WebAssemblyTargetLowering::LowerOperation(SDValue Op,
   default:
     llvm_unreachable("unimplemented operation lowering");
     return SDValue();
+  case ISD::INTTOPTR:
+    return LowerIntToPtr(Op, DAG);
   case ISD::FrameIndex:
     return LowerFrameIndex(Op, DAG);
   case ISD::GlobalAddress:
@@ -1160,6 +1165,14 @@ SDValue WebAssemblyTargetLowering::LowerCopyToReg(SDValue Op,
                                                            : SDValue());
   }
   return SDValue();
+}
+
+SDValue WebAssemblyTargetLowering::LowerIntToPtr(SDValue Op,
+                                                 SelectionDAG &DAG) const {
+    SDLoc DL(Op);
+    SDValue NullHandle(DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL, MVT::iFATPTR64), 0);
+    SDValue OffsetHandle(DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, NullHandle, Op.getOperand(0)), 0);
+    return OffsetHandle;
 }
 
 SDValue WebAssemblyTargetLowering::LowerFrameIndex(SDValue Op,

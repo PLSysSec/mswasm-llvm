@@ -259,17 +259,6 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
     break;
   }
 
-  case ISD::INTTOPTR:
-  case TargetOpcode::G_INTTOPTR:
-  case Instruction::IntToPtr: {
-    // Handle IntToPtrs for MS-Wasm. A full implementation would need to overlay linear memory on
-    // segment memory, but for now, we just replace all IntToPtr instructions with a null handle.
-    MachineSDNode *HandleNullNode = CurDAG->getMachineNode(WebAssembly::HANDLE_NULL, DL, MVT::iFATPTR64);
-    ReplaceNode(Node, HandleNullNode);
-    LLVM_DEBUG(dbgs() << "Replaced INTTOPTR (" << Node->getOpcode() << ") with HANDLE_NULL\n");
-    return;
-  }
-
   // case Instruction::PtrToInt: {
   //   // Handle PtrToInt for MS-Wasm. A full implementation would need to overlay linear memory on
   //   // segment memory, but for now, we just replace all PtrToInt instructions with a constant 0.
