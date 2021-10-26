@@ -119,8 +119,12 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
         setOperationAction(Op, T, Expand);
   }
 
-  // Unavailable pointer conversion
+  // Expand unavailable handle (iFATPTR64) operations
   setOperationAction(ISD::INTTOPTR, MVT::iFATPTR64, Custom);
+  setOperationAction(ISD::BR_CC, MVT::iFATPTR64, Expand);
+  setOperationAction(ISD::SELECT_CC, MVT::iFATPTR64, Expand);
+  for (unsigned CC = 0; CC < ISD::SETCC_INVALID; ++CC)
+    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Custom);
 
   // SIMD-specific configuration
   if (Subtarget->hasSIMD128()) {
@@ -1170,8 +1174,11 @@ SDValue WebAssemblyTargetLowering::LowerCopyToReg(SDValue Op,
 SDValue WebAssemblyTargetLowering::LowerIntToPtr(SDValue Op,
                                                  SelectionDAG &DAG) const {
     SDLoc DL(Op);
-    SDValue NullHandle(DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL, MVT::iFATPTR64), 0);
-    SDValue OffsetHandle(DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, NullHandle, Op.getOperand(0)), 0);
+    SDValue NullHandle(
+      DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL,MVT::iFATPTR64), 0);
+    SDValue OffsetHandle(
+      DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, 
+                         NullHandle, Op.getOperand(0)), 0);
     return OffsetHandle;
 }
 
@@ -1629,6 +1636,20 @@ WebAssemblyTargetLowering::LowerVECTOR_SHUFFLE(SDValue Op,
 SDValue WebAssemblyTargetLowering::LowerSETCC(SDValue Op,
                                               SelectionDAG &DAG) const {
   SDLoc DL(Op);
+  if (Op->getOperand(0)->getSimpleValueType(0) == MVT::iFATPTR64) {
+    // Ideally, handles should be compared on all of (base, bound, offset).
+    // In the absence of a direct handle comparison instruction, we compare
+    // just on the offset, which turns the handle comparison into a simple i32
+    // comparison.
+    SDValue LHS(DAG.getMachineNode(WebAssembly::HANDLE_GET_OFFSET, DL, 
+                                   MVT::i32, Op->getOperand(0)), 0);
+    SDValue RHS(DAG.getMachineNode(WebAssembly::HANDLE_GET_OFFSET, DL,
+                                   MVT::i32, Op->getOperand(1)), 0);
+    const SDValue &CC = Op->getOperand(2);
+
+    return DAG.getNode(ISD::SETCC, DL, MVT::i32, LHS, RHS, CC);
+  }
+
   // The legalizer does not know how to expand the comparison modes of i64x2
   // vectors because no comparison modes are supported. We could solve this by
   // expanding all i64x2 SETCC nodes, but that seems to expand f64x2 SETCC nodes
