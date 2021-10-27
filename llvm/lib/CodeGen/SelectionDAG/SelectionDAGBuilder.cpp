@@ -580,13 +580,20 @@ static void getCopyToParts(SelectionDAG &DAG, const SDLoc &DL, SDValue Val,
     Val = DAG.getNode(ISD::BITCAST, DL, PartVT, Val);
   } else if (NumParts * PartBits < ValueVT.getSizeInBits()) {
     // If the parts cover less bits than value has, truncate the value.
-    assert((PartVT.isInteger() || PartVT == MVT::x86mmx) &&
-           ValueVT.isInteger() &&
-           "Unknown mismatch!");
-    ValueVT = EVT::getIntegerVT(*DAG.getContext(), NumParts * PartBits);
-    Val = DAG.getNode(ISD::TRUNCATE, DL, ValueVT, Val);
-    if (PartVT == MVT::x86mmx)
-      Val = DAG.getNode(ISD::BITCAST, DL, PartVT, Val);
+    // Special case: convert handles to i32
+    if (ValueVT.getSimpleVT() == MVT::iFATPTR64) {
+      assert(PartVT == MVT::i32 && NumParts == 1 && 
+             "Mismatch: Cannot convert iFATPTR64 to unknown type!");
+      Val = DAG.getNode(ISD::PTRTOINT, DL, PartVT, Val);
+    } else {
+      assert((PartVT.isInteger() || PartVT == MVT::x86mmx) &&
+             ValueVT.isInteger() &&
+             "Unknown mismatch!");
+      ValueVT = EVT::getIntegerVT(*DAG.getContext(), NumParts * PartBits);
+      Val = DAG.getNode(ISD::TRUNCATE, DL, ValueVT, Val);
+      if (PartVT == MVT::x86mmx)
+        Val = DAG.getNode(ISD::BITCAST, DL, PartVT, Val);
+    }
   }
 
   // The value may have changed - recompute ValueVT.
