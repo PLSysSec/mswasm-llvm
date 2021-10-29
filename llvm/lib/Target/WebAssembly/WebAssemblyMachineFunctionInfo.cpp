@@ -51,7 +51,7 @@ void llvm::computeSignatureVTs(const FunctionType *Ty,
                                SmallVectorImpl<MVT> &Results) {
   computeLegalValueVTs(ContextFunc, TM, Ty->getReturnType(), Results);
 
-  MVT PtrVT = MVT::getIntegerVT(TM.createDataLayout().getPointerSizeInBits());
+  MVT PtrVT = MVT::iFATPTR64;
   if (Results.size() > 1 &&
       !TM.getSubtarget<WebAssemblySubtarget>(ContextFunc).hasMultivalue()) {
     // WebAssembly can't lower returns of multiple values without demoting to
@@ -73,7 +73,7 @@ void llvm::computeSignatureVTs(const FunctionType *Ty,
   // call.
 
   if (TargetFunc && TargetFunc->getCallingConv() == CallingConv::Swift) {
-    MVT PtrVT = MVT::getIntegerVT(TM.createDataLayout().getPointerSizeInBits());
+    MVT PtrVT = MVT::iFATPTR64;
     bool HasSwiftErrorArg = false;
     bool HasSwiftSelfArg = false;
     for (const auto &Arg : TargetFunc->args()) {
