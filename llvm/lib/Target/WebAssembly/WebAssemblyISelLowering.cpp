@@ -125,6 +125,9 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   setOperationAction(ISD::SELECT_CC, MVT::iFATPTR64, Expand);
   for (unsigned CC = 0; CC < ISD::SETCC_INVALID; ++CC)
     setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Custom);
+  // Account for attempts to use integer operations on handles
+  for (auto Op : {ISD::OR, ISD::XOR, ISD::ADD, ISD::SUB})
+    setOperationAction(Op, MVT::iFATPTR64, Custom);
 
   // SIMD-specific configuration
   if (Subtarget->hasSIMD128()) {
@@ -1140,6 +1143,11 @@ SDValue WebAssemblyTargetLowering::LowerOperation(SDValue Op,
   case ISD::SRA:
   case ISD::SRL:
     return LowerShift(Op, DAG);
+  case ISD::OR:
+  case ISD::XOR:
+  case ISD::ADD:
+  case ISD::SUB:
+    return LowerHandleBinOp(Op, DAG);
   }
 }
 
@@ -1739,6 +1747,33 @@ SDValue WebAssemblyTargetLowering::LowerShift(SDValue Op,
   }
 
   return DAG.getNode(Opcode, DL, Op.getValueType(), Op.getOperand(0), ShiftVal);
+}
+
+SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
+                                                 SelectionDAG &DAG) const {
+  assert(Op.getOperand(0).getSimpleValueType() == MVT::iFATPTR64 && 
+         Op.getOperand(1).getSimpleValueType() == MVT::iFATPTR64 &&
+         "Expected an operator on iFATPTR64");
+
+  SDLoc DL(Op);
+
+  // These operations are not well-defined on a pair of handles. For now we hack them by doing
+  // the operations on the offsets and converting to a 0-base, 0-bound handle with the result as
+  // its offset.
+  switch (Op.getOpcode()) {
+  case ISD::ADD:
+  case ISD::SUB:
+  case ISD::XOR:
+  case ISD::OR: {
+    EVT Ty = MVT::i32;
+    SDValue Op1 = DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(0));
+    SDValue Op2 = DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(1));
+    SDValue Offset = DAG.getNode(Op.getOpcode(), DL, Ty, Op1, Op2);
+    return DAG.getNode(ISD::INTTOPTR, DL, MVT::iFATPTR64, Offset);
+  }
+  default:
+    llvm_unreachable("unexpected opcode");
+  }
 }
 
 //===----------------------------------------------------------------------===//

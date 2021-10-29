@@ -1257,8 +1257,8 @@ SDValue SelectionDAG::getConstant(const ConstantInt &Val, const SDLoc &DL,
     MVT IntVT = MVT::getIntegerVT(AddrBitWidth);
     // XXXAR: If this is actually needed somewhere we should add a
     // DAG.getIntCapConstant() helper function.
-    assert(Int.isNullValue() && "Should not create non-zero capability "
-                                "constants with SelectionDAG::getConstant()");
+    // assert(Int.isNullValue() && "Should not create non-zero capability "
+    //                             "constants with SelectionDAG::getConstant()");
     return getNode(ISD::INTTOPTR, DL, VT, getConstant(Int, DL, IntVT));
   }
   assert(VT.isInteger() && "Cannot create FP integer constant!");
@@ -5340,6 +5340,8 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
   case ISD::XOR:
   case ISD::ADD:
   case ISD::SUB:
+    if (VT.isFatPointer())
+      break;
     assert(!VT.isFatPointer() &&
            "This operator does not apply to capability types!");
     assert(VT.isInteger() && "This operator does not apply to FP types!");
