@@ -78,6 +78,7 @@ WebAssemblyAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
       {"fixup_sleb128_i64", 0, 10 * 8, 0},
       {"fixup_uleb128_i32", 0, 5 * 8, 0},
       {"fixup_uleb128_i64", 0, 10 * 8, 0},
+      {"fixup_cheri_capability", 0, 0, 0}
   };
 
   if (Kind < FirstTargetFixupKind)

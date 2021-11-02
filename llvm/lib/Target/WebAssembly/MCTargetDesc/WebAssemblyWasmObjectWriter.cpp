@@ -105,6 +105,8 @@ unsigned WebAssemblyWasmObjectWriter::getRelocType(const MCValue &Target,
   case WebAssembly::fixup_uleb128_i64:
     assert(SymA.isData());
     return wasm::R_WASM_MEMORY_ADDR_LEB64;
+  case WebAssembly::fixup_cheri_capability:
+    return wasm::R_WASM_CHERI_CAPABILITY;
   case FK_Data_4:
     if (SymA.isFunction())
       return wasm::R_WASM_TABLE_INDEX_I32;
