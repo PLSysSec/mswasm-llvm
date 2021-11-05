@@ -82,11 +82,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   }
 
   MVT PtrVT = TLI->getPointerTy(CurDAG->getDataLayout());
-  auto GlobalGetIns = PtrVT == MVT::i64 ? WebAssembly::GLOBAL_GET_I64
-                                        : WebAssembly::GLOBAL_GET_I32;
-  auto ConstIns =
-      PtrVT == MVT::i64 ? WebAssembly::CONST_I64 : WebAssembly::CONST_I32;
-  auto AddIns = PtrVT == MVT::i64 ? WebAssembly::ADD_I64 : WebAssembly::ADD_I32;
+  auto GlobalGetIns = WebAssembly::GLOBAL_GET_HANDLE;
+  auto ConstIns = WebAssembly::CONST_I32;
+  auto AddIns = WebAssembly::HANDLE_ADD;
 
   // Few custom selection stuff.
   SDLoc DL(Node);
@@ -158,7 +156,7 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
     MachineSDNode *TLSBase =
         CurDAG->getMachineNode(GlobalGetIns, DL, PtrVT, TLSBaseSym);
     MachineSDNode *TLSOffset =
-        CurDAG->getMachineNode(ConstIns, DL, PtrVT, TLSOffsetSym);
+        CurDAG->getMachineNode(ConstIns, DL, MVT::i32, TLSOffsetSym);
     MachineSDNode *TLSAddress = CurDAG->getMachineNode(
         AddIns, DL, PtrVT, SDValue(TLSBase, 0), SDValue(TLSOffset, 0));
     ReplaceNode(Node, TLSAddress);
@@ -249,7 +247,12 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       // name (symbol name) instead of by index. We also keep a list of globals
       // in TM.Globals.
       TM.Globals.insert(GV);
-      const char* globname = GV->getGlobalIdentifier().c_str();
+
+      // We copy the global name to the heap to avoid memory corruption
+      const char* globstr = GV->getGlobalIdentifier().c_str();
+      char* globname = new char[strlen(globstr) + 1];
+      strncpy(globname, globstr, strlen(globstr) + 1);
+
       assert(globname && strlen(globname) > 0 && "global should have a non-empty name");
       const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(globname, MVT::i32);
       MachineSDNode *GlobalGetNode = CurDAG->getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, GlobSymbol);
