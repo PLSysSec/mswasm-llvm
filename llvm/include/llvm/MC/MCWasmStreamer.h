@@ -69,7 +69,14 @@ public:
 
   void emitValueToAlignment(unsigned, int64_t, unsigned, unsigned) override;
 
+  void emitCheriIntcap(const MCExpr *Expr, unsigned CapSize,
+                       SMLoc Loc) override;
+
   void finishImpl() override;
+
+protected:
+  void EmitCheriCapabilityImpl(const MCSymbol *Symbol, const MCExpr *Addend,
+                               unsigned CapSize, SMLoc Loc) override;
 
 private:
   void emitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &) override;

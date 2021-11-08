@@ -38,6 +38,7 @@ bool relocIs64(uint8_t relocType) {
   case R_WASM_MEMORY_ADDR_SLEB64:
   case R_WASM_MEMORY_ADDR_REL_SLEB64:
   case R_WASM_MEMORY_ADDR_I64:
+  case R_WASM_CHERI_CAPABILITY:
     return true;
   default:
     return false;

@@ -19,6 +19,9 @@ enum Fixups {
   fixup_uleb128_i32,                        // 32-bit unsigned
   fixup_uleb128_i64,                        // 64-bit unsigned
 
+  // CLen-bit fixup corresponding to .chericap
+  fixup_cheri_capability,
+
   // Marker
   LastTargetFixupKind,
   NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind

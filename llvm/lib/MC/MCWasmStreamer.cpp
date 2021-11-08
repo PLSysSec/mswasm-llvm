@@ -19,6 +19,7 @@
 #include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCObjectStreamer.h"
 #include "llvm/MC/MCSection.h"
@@ -31,6 +32,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
+#include "../lib/Target/WebAssembly/MCTargetDesc/WebAssemblyFixupKinds.h"
 
 using namespace llvm;
 
@@ -156,11 +158,41 @@ void MCWasmStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
   MCObjectStreamer::emitValueImpl(Value, Size, Loc);
 }
 
+void MCWasmStreamer::EmitCheriCapabilityImpl(const MCSymbol *Symbol,
+                                              const MCExpr *Addend,
+                                              unsigned CapSize, SMLoc Loc) {
+  fprintf(stderr, "[DEBUG 11/1] emitCheriCapabilityImpl called\n");
+  assert(Addend && "Should have received a MCConstExpr(0) instead of nullptr");
+  visitUsedSymbol(*Symbol);
+  MCContext &Context = getContext();
+
+  const MCSymbolRefExpr *SRE =
+      MCSymbolRefExpr::create(Symbol, MCSymbolRefExpr::VK_None, Context, Loc);
+  const MCBinaryExpr *CapExpr = MCBinaryExpr::createAdd(SRE, Addend, Context);
+
+  // Pad to ensure that the capability is aligned
+  emitValueToAlignment(CapSize, 0, 1, 0);
+
+  MCDataFragment *DF = getOrCreateDataFragment();
+  MCFixup CapFixup =
+      MCFixup::create(0, CapExpr, MCFixupKind(WebAssembly::fixup_cheri_capability));
+  DF->getFixups().push_back(CapFixup);
+  DF->getContents().resize(DF->getContents().size() + CapSize, 0);
+  insert(DF);
+}
+
 void MCWasmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
                                           unsigned ValueSize,
                                           unsigned MaxBytesToEmit) {
   MCObjectStreamer::emitValueToAlignment(ByteAlignment, Value, ValueSize,
                                          MaxBytesToEmit);
+}
+
+void MCWasmStreamer::emitCheriIntcap(const MCExpr *Expr, unsigned CapSize,
+                                     SMLoc Loc) {
+  fprintf(stderr, "[DEBUG 11/1] emitCheriIntcap called\n");
+  // assert(CapSize == (Is64Bit ? 16 : 8));
+  // emitCheriIntcapGeneric(Expr, CapSize, Loc);
 }
 
 void MCWasmStreamer::emitIdent(StringRef IdentString) {
