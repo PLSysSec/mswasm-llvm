@@ -627,7 +627,8 @@ EncompassingIntegerType(ArrayRef<struct WidthAndSignedness> Types) {
 }
 
 Value *CodeGenFunction::EmitVAStartEnd(Value *ArgValue, bool IsStart) {
-  unsigned AS = CGM.getTargetCodeGenInfo().getDefaultAS();
+  // Force the use of the CHERI AS
+  unsigned AS = CGM.getTargetCodeGenInfo().getCHERICapabilityAS();
   llvm::Type *DestType = llvm::PointerType::get(Int8Ty, AS);
   if (ArgValue->getType() != DestType)
     ArgValue = Builder.CreatePointerBitCastOrAddrSpaceCast(ArgValue, DestType,
