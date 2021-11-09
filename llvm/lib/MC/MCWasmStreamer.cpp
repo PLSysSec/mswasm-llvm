@@ -161,7 +161,6 @@ void MCWasmStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
 void MCWasmStreamer::EmitCheriCapabilityImpl(const MCSymbol *Symbol,
                                               const MCExpr *Addend,
                                               unsigned CapSize, SMLoc Loc) {
-  fprintf(stderr, "[DEBUG 11/1] emitCheriCapabilityImpl called\n");
   assert(Addend && "Should have received a MCConstExpr(0) instead of nullptr");
   visitUsedSymbol(*Symbol);
   MCContext &Context = getContext();
@@ -173,7 +172,7 @@ void MCWasmStreamer::EmitCheriCapabilityImpl(const MCSymbol *Symbol,
   // Pad to ensure that the capability is aligned
   emitValueToAlignment(CapSize, 0, 1, 0);
 
-  MCDataFragment *DF = getOrCreateDataFragment();
+  MCDataFragment *DF = new MCDataFragment();
   MCFixup CapFixup =
       MCFixup::create(0, CapExpr, MCFixupKind(WebAssembly::fixup_cheri_capability));
   DF->getFixups().push_back(CapFixup);
@@ -191,8 +190,7 @@ void MCWasmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
 void MCWasmStreamer::emitCheriIntcap(const MCExpr *Expr, unsigned CapSize,
                                      SMLoc Loc) {
   fprintf(stderr, "[DEBUG 11/1] emitCheriIntcap called\n");
-  // assert(CapSize == (Is64Bit ? 16 : 8));
-  // emitCheriIntcapGeneric(Expr, CapSize, Loc);
+  emitCheriIntcapGeneric(Expr, CapSize, Loc);
 }
 
 void MCWasmStreamer::emitIdent(StringRef IdentString) {

@@ -20,6 +20,7 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixupKindInfo.h"
+#include "../lib/Target/WebAssembly/MCTargetDesc/WebAssemblyFixupKinds.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSectionWasm.h"
 #include "llvm/MC/MCSymbolWasm.h"
@@ -589,7 +590,8 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
   case wasm::R_WASM_MEMORY_ADDR_REL_SLEB:
   case wasm::R_WASM_MEMORY_ADDR_REL_SLEB64:
   case wasm::R_WASM_MEMORY_ADDR_I32:
-  case wasm::R_WASM_MEMORY_ADDR_I64: {
+  case wasm::R_WASM_MEMORY_ADDR_I64:
+  case wasm::R_WASM_CHERI_CAPABILITY: {
     // Provisional value is address of the global
     const MCSymbolWasm *Base =
         cast<MCSymbolWasm>(Layout.getBaseSymbol(*RelEntry.Symbol));
@@ -601,6 +603,10 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
     // Ignore overflow. LLVM allows address arithmetic to silently wrap.
     return Segment.Offset + Ref.Offset + RelEntry.Addend;
   }
+  // case wasm::R_WASM_CHERI_CAPABILITY: {
+  //   const MCSymbolWasm *Base =
+  //       cast<MCSymbolWasm>(Layout.getBaseSymbol(*RelEntry.Symbol));
+  // }
   default:
     llvm_unreachable("invalid relocation type");
   }
@@ -689,6 +695,7 @@ void WasmObjectWriter::applyRelocations(
       patchI32(Stream, Value, Offset);
       break;
     case wasm::R_WASM_MEMORY_ADDR_I64:
+    case wasm::R_WASM_CHERI_CAPABILITY:
       patchI64(Stream, Value, Offset);
       break;
     case wasm::R_WASM_TABLE_INDEX_SLEB:
@@ -1552,7 +1559,7 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       DataLocations[&WS] = Ref;
       LLVM_DEBUG(dbgs() << "  -> index:" << Ref.Segment << "\n");
     } else {
-      report_fatal_error("don't yet support global/event aliases");
+      // report_fatal_error("don't yet support global/event aliases");
     }
   }
 
@@ -1592,7 +1599,7 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
     if (!WS.isData()) {
       assert(WasmIndices.count(&WS) > 0);
       Info.ElementIndex = WasmIndices.find(&WS)->second;
-    } else if (WS.isDefined()) {
+    } else if (WS.isDefined() && DataLocations.count(&WS) > 0) {
       assert(DataLocations.count(&WS) > 0);
       Info.DataRef = DataLocations.find(&WS)->second;
     }
@@ -1639,7 +1646,7 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       continue;
 
     // init_array is expected to contain a single non-empty data fragment
-    if (WS.getFragmentList().size() != 3)
+    if (WS.getFragmentList().size() != 4)
       report_fatal_error("only one .init_array section fragment supported");
 
     auto IT = WS.begin();
@@ -1651,10 +1658,10 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
     const MCFragment &AlignFrag = *IT;
     if (AlignFrag.getKind() != MCFragment::FT_Align)
       report_fatal_error(".init_array section should be aligned");
-    if (cast<MCAlignFragment>(AlignFrag).getAlignment() != (is64Bit() ? 8 : 4))
+    if (cast<MCAlignFragment>(AlignFrag).getAlignment() != 8)
       report_fatal_error(".init_array section should be aligned for pointers");
 
-    const MCFragment &Frag = *std::next(IT);
+    const MCFragment &Frag = *std::next(std::next(IT));
     if (Frag.hasInstructions() || Frag.getKind() != MCFragment::FT_Data)
       report_fatal_error("only data supported in .init_array section");
 
@@ -1677,6 +1684,10 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
         report_fatal_error("non-symbolic data in .init_array section");
     }
     for (const MCFixup &Fixup : DataFrag.getFixups()) {
+      if (Fixup.getKind() == WebAssembly::fixup_cheri_capability) {
+        continue;
+      }
+
       assert(Fixup.getKind() ==
              MCFixup::getKindForSize(is64Bit() ? 8 : 4, false));
       const MCExpr *Expr = Fixup.getValue();

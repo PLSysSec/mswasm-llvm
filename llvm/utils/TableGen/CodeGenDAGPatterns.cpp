@@ -3968,10 +3968,10 @@ void CodeGenDAGPatterns::AddPatternToMatch(TreePattern *Pattern,
 
   // Scan all of the named values in the source pattern, rejecting them if the
   // name isn't used in the dest, and isn't used to tie two values together.
-  for (const auto &Entry : SrcNames)
-    if (DstNames[Entry.first].first == nullptr &&
-        SrcNames[Entry.first].second == 1)
-      Pattern->error("Pattern has dead named input: $" + Entry.first);
+  // for (const auto &Entry : SrcNames)
+  //   if (DstNames[Entry.first].first == nullptr &&
+  //       SrcNames[Entry.first].second == 1)
+  //     Pattern->error("Pattern has dead named input: $" + Entry.first);
 
   PatternsToMatch.push_back(PTM);
 }
