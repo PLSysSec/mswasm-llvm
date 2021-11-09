@@ -4755,6 +4755,10 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
     }
     break;
   case ISD::TRUNCATE:
+    if (Operand.getValueType().isFatPointer()) {
+      // Short-circuit on attempt to truncate a pointer
+      return Operand.getOperand(0);
+    }
     assert(VT.isInteger() && Operand.getValueType().isInteger() &&
            "Invalid TRUNCATE!");
     assert(VT.isVector() == Operand.getValueType().isVector() &&
