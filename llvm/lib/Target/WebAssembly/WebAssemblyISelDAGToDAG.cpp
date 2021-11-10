@@ -249,9 +249,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       TM.Globals.insert(GV);
 
       // We copy the global name to the heap to avoid memory corruption
-      const char* globstr = GV->getGlobalIdentifier().c_str();
-      char* globname = new char[strlen(globstr) + 1];
-      strncpy(globname, globstr, strlen(globstr) + 1);
+      std::string GlobId = GV->getGlobalIdentifier();
+      char* globname = new char[GlobId.length() + 1];
+      strncpy(globname, GlobId.c_str(), GlobId.length() + 1);
 
       assert(globname && strlen(globname) > 0 && "global should have a non-empty name");
       const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(globname, MVT::i32);

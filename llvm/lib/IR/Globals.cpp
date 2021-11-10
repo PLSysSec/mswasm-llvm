@@ -147,7 +147,10 @@ std::string GlobalValue::getGlobalIdentifier(StringRef Name,
     // version control in different locations.
     if (FileName.empty())
       NewName = NewName.insert(0, "<unknown>:");
-    else
+    else if (FileName.find('/') != std::string::npos) {
+      FileName = FileName.substr(FileName.find_last_of('/') + 1);
+      NewName = NewName.insert(0, FileName.str() + ":");
+    } else
       NewName = NewName.insert(0, FileName.str() + ":");
   }
   return NewName;
