@@ -4706,6 +4706,9 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
       return getConstant(0, DL, VT);
     break;
   case ISD::ZERO_EXTEND:
+    if (VT.isFatPointer()) {
+      return getNode(ISD::INTTOPTR, DL, VT, Operand);
+    }
     assert(VT.isInteger() && Operand.getValueType().isInteger() &&
            "Invalid ZERO_EXTEND!");
     assert(VT.isVector() == Operand.getValueType().isVector() &&
@@ -4757,7 +4760,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
   case ISD::TRUNCATE:
     if (Operand.getValueType().isFatPointer()) {
       // Short-circuit on attempt to truncate a pointer
-      return Operand.getOperand(0);
+      return getNode(ISD::PTRTOINT, DL, VT, Operand);
     }
     assert(VT.isInteger() && Operand.getValueType().isInteger() &&
            "Invalid TRUNCATE!");

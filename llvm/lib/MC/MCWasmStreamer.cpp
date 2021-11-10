@@ -189,7 +189,6 @@ void MCWasmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
 
 void MCWasmStreamer::emitCheriIntcap(const MCExpr *Expr, unsigned CapSize,
                                      SMLoc Loc) {
-  fprintf(stderr, "[DEBUG 11/1] emitCheriIntcap called\n");
   emitCheriIntcapGeneric(Expr, CapSize, Loc);
 }
 
