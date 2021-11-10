@@ -1490,9 +1490,10 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
         Globals.push_back(Global);
       } else {
         // An import; the index was assigned above
-        LLVM_DEBUG(dbgs() << "  -> global index: "
-                          << WasmIndices.find(&WS)->second << "\n");
+        assert(WasmIndices.count(&WS) > 0);
       }
+      LLVM_DEBUG(dbgs() << "  -> global index: "
+                        << WasmIndices.find(&WS)->second << "\n");
     } else if (WS.isEvent()) {
       // C++ exception symbol (__cpp_exception)
       unsigned Index;
@@ -1557,6 +1558,7 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
           static_cast<uint32_t>(Layout.getSymbolOffset(S)),
           static_cast<uint32_t>(Size)};
       DataLocations[&WS] = Ref;
+      WasmIndices[&WS] = Ref.Segment;  // CD: added this, maybe it's bad, but seems to avoid some compile errors for now?
       LLVM_DEBUG(dbgs() << "  -> index:" << Ref.Segment << "\n");
     } else {
       // report_fatal_error("don't yet support global/event aliases");
