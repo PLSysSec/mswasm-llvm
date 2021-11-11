@@ -7014,10 +7014,10 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     }
 
     // SetAddr($cap, $addr) -> CIncOffset($cap, $addr - GetAddr($cap))
-    EVT PtrVT = TLI.getPointerTy(DAG.getDataLayout(), 0);
+    EVT PtrVT = TLI.getPointerRangeTy(DAG.getDataLayout());
     SDValue CapAddr = DAG.getNode(
         ISD::INTRINSIC_WO_CHAIN, sdl, PtrVT,
-        DAG.getConstant(Intrinsic::cheri_cap_address_get, sdl, PtrVT), Cap);
+        DAG.getTargetConstant(Intrinsic::cheri_cap_address_get, sdl, PtrVT), Cap);
     SDValue Delta = DAG.getNode(ISD::SUB, sdl, PtrVT, Addr, CapAddr);
     Res = DAG.getPointerAdd(sdl, Cap, Delta);
     setValue(&I, Res);

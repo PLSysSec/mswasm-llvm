@@ -6025,6 +6025,9 @@ SDValue SelectionDAG::getMemBasePlusOffset(SDValue Base, int64_t Offset,
 SDValue SelectionDAG::getMemBasePlusOffset(SDValue Ptr, SDValue Offset,
                                            const SDLoc &DL,
                                            const SDNodeFlags Flags) {
+  if (Offset.getValueType().isFatPointer()) {
+    Offset = getNode(ISD::PTRTOINT, DL, MVT::i32, Offset);
+  }
   assert(Offset.getValueType().isInteger());
   if (auto *Constant = dyn_cast<ConstantSDNode>(Offset.getNode())) {
     if (Constant->isNullValue())

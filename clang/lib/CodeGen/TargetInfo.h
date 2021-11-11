@@ -238,7 +238,7 @@ public:
     // For e.g. AMDGPU this should not return 0 but instead whatever LangAS::Default maps to
     return getABIInfo().getContext().getTargetAddressSpace(LangAS::Default, nullptr);
 #else
-    return 0; // XXXAR: to keep code the same as upstream
+    return 200; // XXXAR: to keep code the same as upstream
 #endif
   }
   /// The address space for thead_local variables in the IR. This should be the

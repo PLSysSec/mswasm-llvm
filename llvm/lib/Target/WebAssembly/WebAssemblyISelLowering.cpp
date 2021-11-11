@@ -1751,8 +1751,10 @@ SDValue WebAssemblyTargetLowering::LowerShift(SDValue Op,
 
 SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
                                                  SelectionDAG &DAG) const {
-  assert(Op.getOperand(0).getSimpleValueType() == MVT::iFATPTR64 && 
-         Op.getOperand(1).getSimpleValueType() == MVT::iFATPTR64 &&
+  MVT Op1Ty = Op.getOperand(0).getSimpleValueType();
+  MVT Op2Ty = Op.getOperand(1).getSimpleValueType();
+  assert((Op1Ty == MVT::iFATPTR64 || Op1Ty == MVT::i32) &&
+         (Op2Ty == MVT::iFATPTR64 || Op2Ty == MVT::i32) &&
          "Expected an operator on iFATPTR64");
 
   SDLoc DL(Op);
@@ -1766,8 +1768,10 @@ SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
   case ISD::XOR:
   case ISD::OR: {
     EVT Ty = MVT::i32;
-    SDValue Op1 = DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(0));
-    SDValue Op2 = DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(1));
+    SDValue Op1 = Op1Ty == MVT::i32 ? Op.getOperand(0) :
+                  DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(0));
+    SDValue Op2 = Op2Ty == MVT::i32 ? Op.getOperand(1) :
+                  DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(1));
     SDValue Offset = DAG.getNode(Op.getOpcode(), DL, Ty, Op1, Op2);
     return DAG.getNode(ISD::INTTOPTR, DL, MVT::iFATPTR64, Offset);
   }
