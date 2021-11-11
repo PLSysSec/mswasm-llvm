@@ -553,6 +553,8 @@ WebAssemblyTargetLowering::getRegForInlineAsmConstraint(
           return std::make_pair(0U, &WebAssembly::I32RegClass);
         if (VT.getSizeInBits() <= 64)
           return std::make_pair(0U, &WebAssembly::I64RegClass);
+      } else if (VT.isFatPointer() && VT.getSizeInBits() <= 64) {
+          return std::make_pair(0U, &WebAssembly::HANDLERegClass);
       }
       break;
     default:
