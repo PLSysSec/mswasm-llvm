@@ -199,6 +199,23 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   }
   case WebAssemblyISD::CALL:
   case WebAssemblyISD::RET_CALL: {
+    // We manually replace all calls to malloc with new_segment
+    if (Node->getNumOperands() > 1 && Node->getOperand(1).getNumOperands() > 0) {
+      SDValue Op = Node->getOperand(1).getOperand(0);
+      if (Op.getOpcode() == ISD::TargetGlobalAddress) {
+        const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
+        
+        if (GV->getName().equals("malloc")) {
+          LLVM_DEBUG(dbgs() << "Replacing call to malloc with new_segment of size " << 
+              Node->getConstantOperandVal(2) << " \n");
+          MachineSDNode* MallocNode =
+              CurDAG->getMachineNode(WebAssembly::NEW_SEGMENT, DL, Node->getVTList(), Node->getOperand(2));
+          ReplaceNode(Node, MallocNode);
+          return;
+        }
+      }
+    }
+
     // CALL has both variable operands and variable results, but ISel only
     // supports one or the other. Split calls into two nodes glued together, one
     // for the operands and one for the results. These two nodes will be
