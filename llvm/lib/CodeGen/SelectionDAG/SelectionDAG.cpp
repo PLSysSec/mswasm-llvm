@@ -8728,8 +8728,8 @@ void SelectionDAG::ReplaceAllUsesWith(SDNode *From, SDNode *To) {
   // Preserve Debug Info. Only do this if there's a use.
   for (unsigned i = 0, e = From->getNumValues(); i != e; ++i)
     if (From->hasAnyUseOfValue(i)) {
-      if ((i < To->getNumValues()) && "Invalid To location")
-        transferDbgValues(SDValue(From, i), SDValue(To, i));
+      assert((i < To->getNumValues()) && "Invalid To location");
+      transferDbgValues(SDValue(From, i), SDValue(To, i));
     }
 
   // Iterate over just the existing users of From. See the comments in
