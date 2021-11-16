@@ -753,6 +753,7 @@ void SelectionDAG::RemoveDeadNode(SDNode *N){
   // it from being deleted.  (This matters if the root is an operand of the
   // dead node.)
   HandleSDNode Dummy(getRoot());
+  HandleSDNode DummyET(getEntryNode());
 
   RemoveDeadNodes(DeadNodes);
 }
