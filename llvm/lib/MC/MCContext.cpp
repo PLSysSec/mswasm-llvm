@@ -16,6 +16,7 @@
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/BinaryFormat/XCOFF.h"
+#include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCCodeView.h"
 #include "llvm/MC/MCDwarf.h"
@@ -137,8 +138,14 @@ MCSymbol *MCContext::getOrCreateSymbol(const Twine &Name) {
   assert(!NameRef.empty() && "Normal symbols cannot be unnamed!");
 
   MCSymbol *&Sym = Symbols[NameRef];
-  if (!Sym)
+  if (!Sym) {
     Sym = createSymbol(NameRef, false, false);
+    // Hardcode in global behavior for errno and __libc
+    if (NameRef.equals("errno") || NameRef.equals("__libc")) {
+      cast<MCSymbolWasm>(Sym)->setType(wasm::WASM_SYMBOL_TYPE_GLOBAL);
+      cast<MCSymbolWasm>(Sym)->setGlobalType(wasm::WasmGlobalType{wasm::WASM_TYPE_HANDLE, true});
+    }
+  }
 
   return Sym;
 }
