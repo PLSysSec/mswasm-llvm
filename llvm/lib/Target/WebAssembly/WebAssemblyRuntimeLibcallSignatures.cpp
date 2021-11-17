@@ -72,7 +72,7 @@ enum RuntimeLibcallSignature {
   i64_i64_func_i64_i64_i64_i64_iPTR,
   i64_i64_i64_i64_func_i64_i64_i64_i64,
   i64_i64_func_i64_i64_i32,
-  iPTR_func_iPTR_i32_iPTR,
+  iPTR_func_iPTR_i32_i32,
   iPTR_func_iPTR_iPTR_iPTR,
   f32_func_f32_f32_f32,
   f64_func_f64_f64_f64,
@@ -323,7 +323,7 @@ struct RuntimeLibcallSignatureTable {
 
     // Memory
     Table[RTLIB::MEMCPY] = iPTR_func_iPTR_iPTR_iPTR;
-    Table[RTLIB::MEMSET] = iPTR_func_iPTR_i32_iPTR;
+    Table[RTLIB::MEMSET] = iPTR_func_iPTR_i32_i32;
     Table[RTLIB::MEMMOVE] = iPTR_func_iPTR_iPTR_iPTR;
 
     // __stack_chk_fail
@@ -520,8 +520,7 @@ void llvm::getLibcallSignature(const WebAssemblySubtarget &Subtarget,
   assert(Rets.empty());
   assert(Params.empty());
 
-  wasm::ValType PtrTy =
-      Subtarget.hasAddr64() ? wasm::ValType::I64 : wasm::ValType::I32;
+  wasm::ValType PtrTy = wasm::ValType::HANDLE;
 
   auto &Table = RuntimeLibcallSignatures->Table;
   switch (Table[LC]) {
@@ -782,11 +781,11 @@ void llvm::getLibcallSignature(const WebAssemblySubtarget &Subtarget,
     Params.push_back(wasm::ValType::I64);
     Params.push_back(wasm::ValType::I32);
     break;
-  case iPTR_func_iPTR_i32_iPTR:
+  case iPTR_func_iPTR_i32_i32:
     Rets.push_back(PtrTy);
     Params.push_back(PtrTy);
     Params.push_back(wasm::ValType::I32);
-    Params.push_back(PtrTy);
+    Params.push_back(wasm::ValType::I32);
     break;
   case iPTR_func_iPTR_iPTR_iPTR:
     Rets.push_back(PtrTy);
