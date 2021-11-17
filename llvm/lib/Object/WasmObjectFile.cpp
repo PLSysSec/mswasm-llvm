@@ -855,7 +855,8 @@ Error WasmObjectFile::parseRelocSection(StringRef Name, ReadContext &Ctx) {
                                               object_error::parse_failed);
       break;
     case wasm::R_WASM_CHERI_CAPABILITY:
-      if (!isValidDataSymbol(Reloc.Index) && !isValidFunctionSymbol(Reloc.Index))
+      if (!isValidDataSymbol(Reloc.Index) && !isValidFunctionSymbol(Reloc.Index) &&
+          !isValidGlobalSymbol(Reloc.Index))
         return make_error<GenericBinaryError>("Bad cheri cap relocation index",
                                               object_error::parse_failed);
       break;
