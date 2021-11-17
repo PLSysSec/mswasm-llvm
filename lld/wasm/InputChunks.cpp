@@ -88,6 +88,7 @@ void InputChunk::verifyRelocTargets() const {
       existingValue = read32le(loc);
       break;
     case R_WASM_MEMORY_ADDR_I64:
+    case R_WASM_CHERI_CAPABILITY:
       existingValue = read64le(loc);
       break;
     default:
@@ -164,6 +165,7 @@ void InputChunk::writeTo(uint8_t *buf) const {
       write32le(loc, value);
       break;
     case R_WASM_MEMORY_ADDR_I64:
+    case R_WASM_CHERI_CAPABILITY:
       write64le(loc, value);
       break;
     default:

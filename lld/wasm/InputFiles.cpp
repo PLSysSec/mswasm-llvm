@@ -155,7 +155,27 @@ uint64_t ObjFile::calcExpectedValue(const WasmRelocation &reloc) const {
              reloc.Addend;
     else
       llvm_unreachable("unknown init expr opcode");
-  }
+  } 
+  case R_WASM_CHERI_CAPABILITY: {
+    const WasmSymbol &sym = wasmObj->syms()[reloc.Index];
+    if (sym.isTypeGlobal() || sym.isTypeFunction()) {
+      return sym.Info.ElementIndex;
+    }
+
+    // sym is of type Data
+    if (sym.isUndefined())
+      return 0;
+    const WasmSegment &segment =
+        wasmObj->dataSegments()[sym.Info.DataRef.Segment];
+    if (segment.Data.Offset.Opcode == WASM_OPCODE_I32_CONST)
+      return segment.Data.Offset.Value.Int32 + sym.Info.DataRef.Offset +
+             reloc.Addend;
+    else if (segment.Data.Offset.Opcode == WASM_OPCODE_I64_CONST)
+      return segment.Data.Offset.Value.Int64 + sym.Info.DataRef.Offset +
+             reloc.Addend;
+    else
+      llvm_unreachable("unknown init expr opcode");
+  } 
   case R_WASM_FUNCTION_OFFSET_I32: {
     const WasmSymbol &sym = wasmObj->syms()[reloc.Index];
     InputFunction *f =
@@ -216,6 +236,19 @@ uint64_t ObjFile::calcNewValue(const WasmRelocation &reloc) const {
     if (isa<UndefinedData>(sym) || sym->isUndefWeak())
       return 0;
     return cast<DefinedData>(sym)->getVirtualAddress() + reloc.Addend;
+  case R_WASM_CHERI_CAPABILITY: {
+    if (isa<GlobalSymbol>(sym)) {
+      if (auto gs = dyn_cast<GlobalSymbol>(sym))
+        return gs->getGlobalIndex();
+      return sym->getGOTIndex();
+    } else if (isa<FunctionSymbol>(sym)) {
+      return getFunctionSymbol(reloc.Index)->getFunctionIndex();
+    } else {
+      if (isa<UndefinedData>(sym) || sym->isUndefWeak())
+        return 0;
+      return cast<DefinedData>(sym)->getVirtualAddress() + reloc.Addend;
+    }
+  }
   case R_WASM_TYPE_INDEX_LEB:
     return typeMap[reloc.Index];
   case R_WASM_FUNCTION_INDEX_LEB:

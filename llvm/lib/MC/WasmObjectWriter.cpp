@@ -603,7 +603,7 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
     return Segment.Offset + Ref.Offset + RelEntry.Addend;
   }
   case wasm::R_WASM_CHERI_CAPABILITY: {
-    if (RelEntry.Symbol->isFunction()) {
+    if (RelEntry.Symbol->isFunction() || RelEntry.Symbol->isGlobal()) {
       assert(WasmIndices.count(RelEntry.Symbol) > 0 && "symbol not found in wasm index space");
       return WasmIndices[RelEntry.Symbol];
     } else {
