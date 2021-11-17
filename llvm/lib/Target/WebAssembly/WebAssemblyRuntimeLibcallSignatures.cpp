@@ -73,6 +73,7 @@ enum RuntimeLibcallSignature {
   i64_i64_i64_i64_func_i64_i64_i64_i64,
   i64_i64_func_i64_i64_i32,
   iPTR_func_iPTR_i32_i32,
+  iPTR_func_iPTR_iPTR_i32,
   iPTR_func_iPTR_iPTR_iPTR,
   f32_func_f32_f32_f32,
   f64_func_f64_f64_f64,
@@ -322,7 +323,7 @@ struct RuntimeLibcallSignatureTable {
     Table[RTLIB::UO_F128] = i32_func_i64_i64_i64_i64;
 
     // Memory
-    Table[RTLIB::MEMCPY] = iPTR_func_iPTR_iPTR_iPTR;
+    Table[RTLIB::MEMCPY] = iPTR_func_iPTR_iPTR_i32;
     Table[RTLIB::MEMSET] = iPTR_func_iPTR_i32_i32;
     Table[RTLIB::MEMMOVE] = iPTR_func_iPTR_iPTR_iPTR;
 
@@ -785,6 +786,12 @@ void llvm::getLibcallSignature(const WebAssemblySubtarget &Subtarget,
     Rets.push_back(PtrTy);
     Params.push_back(PtrTy);
     Params.push_back(wasm::ValType::I32);
+    Params.push_back(wasm::ValType::I32);
+    break;
+  case iPTR_func_iPTR_iPTR_i32:
+    Rets.push_back(PtrTy);
+    Params.push_back(PtrTy);
+    Params.push_back(PtrTy);
     Params.push_back(wasm::ValType::I32);
     break;
   case iPTR_func_iPTR_iPTR_iPTR:
