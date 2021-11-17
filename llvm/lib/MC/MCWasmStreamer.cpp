@@ -162,6 +162,7 @@ void MCWasmStreamer::EmitCheriCapabilityImpl(const MCSymbol *Symbol,
                                               const MCExpr *Addend,
                                               unsigned CapSize, SMLoc Loc) {
   assert(Addend && "Should have received a MCConstExpr(0) instead of nullptr");
+  assert(Addend->getKind() == MCExpr::ExprKind::Constant && "Should have received a constant addend");
   visitUsedSymbol(*Symbol);
   MCContext &Context = getContext();
 

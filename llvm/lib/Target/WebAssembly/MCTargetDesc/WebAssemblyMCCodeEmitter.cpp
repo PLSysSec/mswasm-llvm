@@ -163,10 +163,6 @@ void WebAssemblyMCCodeEmitter::encodeInstruction(
         FixupKind = MCFixupKind(WebAssembly::fixup_uleb128_i64);
         PaddedSize = 10;
         break;
-      case WebAssembly::OPERAND_HANDLE:
-        FixupKind = MCFixupKind(WebAssembly::fixup_cheri_capability);
-        PaddedSize = 10;
-        break;
       default:
         llvm_unreachable("unexpected symbolic operand kind");
       }

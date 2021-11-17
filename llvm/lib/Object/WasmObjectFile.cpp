@@ -853,7 +853,11 @@ Error WasmObjectFile::parseRelocSection(StringRef Name, ReadContext &Ctx) {
       if (!isValidSectionSymbol(Reloc.Index))
         return make_error<GenericBinaryError>("Bad relocation section index",
                                               object_error::parse_failed);
-      Reloc.Addend = readVarint32(Ctx);
+      break;
+    case wasm::R_WASM_CHERI_CAPABILITY:
+      if (!isValidDataSymbol(Reloc.Index) && !isValidFunctionSymbol(Reloc.Index))
+        return make_error<GenericBinaryError>("Bad cheri cap relocation index",
+                                              object_error::parse_failed);
       break;
     default:
       return make_error<GenericBinaryError>("Bad relocation type: " +
@@ -877,6 +881,8 @@ Error WasmObjectFile::parseRelocSection(StringRef Name, ReadContext &Ctx) {
       Size = 4;
     if (Reloc.Type == wasm::R_WASM_MEMORY_ADDR_I64)
       Size = 8;
+    if (Reloc.Type == wasm::R_WASM_CHERI_CAPABILITY)
+      Size = 0;
     if (Reloc.Offset + Size > EndOffset)
       return make_error<GenericBinaryError>("Bad relocation offset",
                                             object_error::parse_failed);

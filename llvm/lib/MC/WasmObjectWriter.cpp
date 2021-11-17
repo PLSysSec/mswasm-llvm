@@ -590,8 +590,7 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
   case wasm::R_WASM_MEMORY_ADDR_REL_SLEB:
   case wasm::R_WASM_MEMORY_ADDR_REL_SLEB64:
   case wasm::R_WASM_MEMORY_ADDR_I32:
-  case wasm::R_WASM_MEMORY_ADDR_I64:
-  case wasm::R_WASM_CHERI_CAPABILITY: {
+  case wasm::R_WASM_MEMORY_ADDR_I64: {
     // Provisional value is address of the global
     const MCSymbolWasm *Base =
         cast<MCSymbolWasm>(Layout.getBaseSymbol(*RelEntry.Symbol));
@@ -603,10 +602,24 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
     // Ignore overflow. LLVM allows address arithmetic to silently wrap.
     return Segment.Offset + Ref.Offset + RelEntry.Addend;
   }
-  // case wasm::R_WASM_CHERI_CAPABILITY: {
-  //   const MCSymbolWasm *Base =
-  //       cast<MCSymbolWasm>(Layout.getBaseSymbol(*RelEntry.Symbol));
-  // }
+  case wasm::R_WASM_CHERI_CAPABILITY: {
+    if (RelEntry.Symbol->isFunction()) {
+      assert(WasmIndices.count(RelEntry.Symbol) > 0 && "symbol not found in wasm index space");
+      return WasmIndices[RelEntry.Symbol];
+    } else {
+      assert(RelEntry.Symbol->isData());
+      // Provisional value is address of the global
+      const MCSymbolWasm *Base =
+          cast<MCSymbolWasm>(Layout.getBaseSymbol(*RelEntry.Symbol));
+      // For undefined symbols, use zero
+      if (!Base->isDefined())
+        return 0;
+      const wasm::WasmDataReference &Ref = DataLocations[Base];
+      const WasmDataSegment &Segment = DataSegments[Ref.Segment];
+      // Ignore overflow. LLVM allows address arithmetic to silently wrap.
+      return Segment.Offset + Ref.Offset;
+    }
+  }
   default:
     llvm_unreachable("invalid relocation type");
   }
@@ -1560,8 +1573,59 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       DataLocations[&WS] = Ref;
       WasmIndices[&WS] = Ref.Segment;  // CD: added this, maybe it's bad, but seems to avoid some compile errors for now?
       LLVM_DEBUG(dbgs() << "  -> index:" << Ref.Segment << "\n");
+
+      // Deal with a global symbol aliased to data
+      if (WS.isGlobal()) {
+        wasm::WasmGlobal Global;
+        Global.Type = WS.getGlobalType();
+        Global.Index = NumGlobalImports + Globals.size();
+        switch (Global.Type.Type) {
+        case wasm::WASM_TYPE_I32:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_I32_CONST;
+          break;
+        case wasm::WASM_TYPE_I64:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_I64_CONST;
+          break;
+        case wasm::WASM_TYPE_F32:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_F32_CONST;
+          break;
+        case wasm::WASM_TYPE_F64:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_F64_CONST;
+          break;
+        case wasm::WASM_TYPE_EXTERNREF:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_REF_NULL;
+          break;
+        case wasm::WASM_TYPE_HANDLE:
+          Global.InitExpr.Opcode = wasm::WASM_OPCODE_HANDLE_NULL;
+          break;
+        default:
+          llvm_unreachable("unexpected type");
+        }
+        WasmIndices[&WS] = Global.Index;
+        Globals.push_back(Global);
+      }
+
     } else {
-      // report_fatal_error("don't yet support global/event aliases");
+      auto &GlobSection = static_cast<MCSectionWasm &>(WS.getSection());
+      uint64_t Offset = Layout.getSymbolOffset(S);
+      int64_t Size = 0;
+      // For data symbol alias we use the size of the base symbol as the
+      // size of the alias.  When an offset from the base is involved this
+      // can result in a offset + size goes past the end of the data section
+      // which out object format doesn't support.  So we must clamp it.
+      if (!Base->getSize()->evaluateAsAbsolute(Size, Layout))
+        report_fatal_error(".size expression must be evaluatable");
+      const WasmDataSegment &Segment =
+          DataSegments[GlobSection.getSegmentIndex()];
+      Size =
+          std::min(static_cast<uint64_t>(Size), Segment.Data.size() - Offset);
+      wasm::WasmDataReference Ref = wasm::WasmDataReference{
+          GlobSection.getSegmentIndex(),
+          static_cast<uint32_t>(Layout.getSymbolOffset(S)),
+          static_cast<uint32_t>(Size)};
+      DataLocations[&WS] = Ref;
+      WasmIndices[&WS] = Ref.Segment;  // CD: added this, maybe it's bad, but seems to avoid some compile errors for now?
+      LLVM_DEBUG(dbgs() << "  -> index:" << Ref.Segment << "\n");\
     }
   }
 
@@ -1686,13 +1750,16 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
         report_fatal_error("non-symbolic data in .init_array section");
     }
     for (const MCFixup &Fixup : DataFrag.getFixups()) {
-      if (Fixup.getKind() == WebAssembly::fixup_cheri_capability) {
-        continue;
-      }
+      if (Fixup.getKind() != WebAssembly::fixup_cheri_capability) 
+        assert(Fixup.getKind() ==
+               MCFixup::getKindForSize(is64Bit() ? 8 : 4, false));
 
-      assert(Fixup.getKind() ==
-             MCFixup::getKindForSize(is64Bit() ? 8 : 4, false));
-      const MCExpr *Expr = Fixup.getValue();
+      const MCExpr *Expr;
+      if (Fixup.getKind() != WebAssembly::fixup_cheri_capability)
+        Expr = Fixup.getValue();
+      else
+        Expr = cast<MCBinaryExpr>(Fixup.getValue())->getLHS();
+
       auto *SymRef = dyn_cast<MCSymbolRefExpr>(Expr);
       if (!SymRef)
         report_fatal_error("fixups in .init_array should be symbol references");
