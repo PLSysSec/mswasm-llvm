@@ -292,7 +292,7 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       TM.Globals.insert(GV);
 
       // We copy the global name to the heap to avoid memory corruption
-      std::string GlobId = GV->getGlobalIdentifier();
+      std::string GlobId = TM.getSymbol(GV)->getName().str();
       char* globname = new char[GlobId.length() + 1];
       strncpy(globname, GlobId.c_str(), GlobId.length() + 1);
 

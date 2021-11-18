@@ -209,7 +209,8 @@ void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
     const DebugLoc &DL) const {
   const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
 
-  std::string GlobId = GV->getGlobalIdentifier();
+  MCSymbol* Sym = MF.getTarget().getSymbol(GV);
+  std::string GlobId = Sym->getName().str();
   char* GlobalName = new char[GlobId.length() + 1];
   strncpy(GlobalName, GlobId.c_str(), GlobId.length() + 1);
   auto *GlobalSymbol = MF.createExternalSymbolName(GlobalName);
@@ -217,7 +218,7 @@ void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
   BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
       .addExternalSymbol(GlobalSymbol, /* TargetFlags= */ 1)
       .addReg(SrcReg);
-  LLVM_DEBUG(dbgs() << "\nWrote global address to global '" << GlobalName << "'");
+  LLVM_DEBUG(dbgs() << "\nWrote global address to global '" << GlobalName << "', Sym = " << Sym->getName());
 }
 
 MachineBasicBlock::iterator
