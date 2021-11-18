@@ -240,9 +240,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   assert(MFI.getCalleeSavedInfo().empty() &&
          "WebAssembly should not have callee-saved registers");
 
-  bool isMain = MF.getFunction().getName() == "main";
-
-  if (!needsSP(MF) && !isMain)
+  if (!needsSP(MF))
     return;
   uint64_t StackSize = MFI.getStackSize();
 
@@ -262,9 +260,9 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   //   - allocate the stack and store the handle in the appropriate global
   //   - allocate and initialize other (LLVM) globals, and store the handles
   //     in appropriate (Wasm) globals. This only needs to be done for LLVM
-  //     globals which we take the address of (eg, global arrays, including
-  //     static strings). Other LLVM globals are handled elsewhere.
-  if (isMain) {
+  //     globals which we take the address of (eg, global arrays). Other LLVM
+  //     globals are handled elsewhere.
+  if (MF.getFunction().getName() == "main") {
     // allocate the stack
     const uint64_t ALLOCATED_STACK_SIZE_BYTES = 2 * 1024 * 1024; // we arbitrary choose to allocate 2MB for the stack
     const TargetRegisterClass *I32RC =

@@ -86,19 +86,6 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   auto ConstIns = WebAssembly::CONST_I32;
   auto AddIns = WebAssembly::HANDLE_ADD;
 
-  // pretty hacky, but here we catch all globals and make sure they
-  // are added to the list of globals we maintain
-  // (later we use that list to ensure all globals' segments are
-  // allocated/initialized)
-  for (size_t i = 0; i < Node->getNumOperands(); ++i) {
-    SDValue Op = Node->getOperand(i);
-    if (Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress) {
-      const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
-      LLVM_DEBUG(dbgs() << "Found global " << GV->getName() << "\n");
-      TM.Globals.insert(GV);
-    }
-  }
-
   // Few custom selection stuff.
   SDLoc DL(Node);
   MachineFunction &MF = CurDAG->getMachineFunction();
@@ -219,7 +206,7 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
         const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
 
         if (GV->getName().equals("malloc")) {
-          LLVM_DEBUG(dbgs() << "Replacing call to malloc with NEW_SEGMENT of size " <<
+          LLVM_DEBUG(dbgs() << "Replacing call to malloc with NEW_SEGMENT of size " << 
               Node->getConstantOperandVal(2) << " \n");
           SmallVector<SDValue, 16> Ops;
           Ops.push_back(Node->getOperand(2)); // Add the function arg
