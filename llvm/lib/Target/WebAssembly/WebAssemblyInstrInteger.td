@@ -108,7 +108,7 @@ defm HANDLE_SUB : I<(outs HANDLE:$dst), (ins HANDLE:$h, offset32_op:$off), (outs
 defm HANDLE_GET_OFFSET : I<(outs I32:$dst), (ins HANDLE:$h), (outs), (ins),
                            [(set I32:$dst, (ptrtoint HANDLE:$h))],
                            "handle.get_offset \t$dst, $h",
-                           "handle.get_offset", 0xfb>;
+                           "handle.get_offset", 0xff>;
 
 // Optimize away an explicit mask on a rotate count.
 def : Pat<(rotl I32:$lhs, (and I32:$rhs, 31)), (ROTL_I32 I32:$lhs, I32:$rhs)>;
