@@ -209,12 +209,15 @@ void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
     const DebugLoc &DL) const {
   const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
 
-  const char *GlobalName = GV->getGlobalIdentifier().c_str();
+  std::string GlobId = GV->getGlobalIdentifier();
+  char* GlobalName = new char[GlobId.length() + 1];
+  strncpy(GlobalName, GlobId.c_str(), GlobId.length() + 1);
   auto *GlobalSymbol = MF.createExternalSymbolName(GlobalName);
 
   BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
       .addExternalSymbol(GlobalSymbol, /* TargetFlags= */ 1)
       .addReg(SrcReg);
+  LLVM_DEBUG(dbgs() << "\nWrote global address to global '" << GlobalName << "'");
 }
 
 MachineBasicBlock::iterator
