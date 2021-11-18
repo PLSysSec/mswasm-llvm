@@ -208,15 +208,21 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
         if (GV->getName().equals("malloc")) {
           LLVM_DEBUG(dbgs() << "Replacing call to malloc with NEW_SEGMENT of size " << 
               Node->getConstantOperandVal(2) << " \n");
+          SmallVector<SDValue, 16> Ops;
+          Ops.push_back(Node->getOperand(2)); // Add the function arg
+          Ops.push_back(Node->getOperand(0)); // and the chain
           MachineSDNode* MallocNode =
-              CurDAG->getMachineNode(WebAssembly::NEW_SEGMENT, DL, Node->getVTList(), Node->getOperand(2));
+              CurDAG->getMachineNode(WebAssembly::NEW_SEGMENT, DL, Node->getVTList(), Ops);
           ReplaceNode(Node, MallocNode);
           return;
 
         } else if (GV->getName().equals("free")) {
           LLVM_DEBUG(dbgs() << "Replacing call to free with FREE_SEGMENT\n");
+          SmallVector<SDValue, 16> Ops;
+          Ops.push_back(Node->getOperand(2)); // Add the function arg
+          Ops.push_back(Node->getOperand(0)); // and the chain
           MachineSDNode* FreeNode =
-              CurDAG->getMachineNode(WebAssembly::FREE_SEGMENT, DL, Node->getVTList(), Node->getOperand(2));
+              CurDAG->getMachineNode(WebAssembly::FREE_SEGMENT, DL, Node->getVTList(), Ops);
           ReplaceNode(Node, FreeNode);
           return;
         }
