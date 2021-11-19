@@ -329,8 +329,6 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
 
   const char *DPSymbolName = "__data_pointer";
   auto *DPSymbol = MF.createExternalSymbolName(DPSymbolName);
-  BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
-      .addExternalSymbol(DPSymbol);
 
   bool HasBP = hasBP(MF);
   if (HasBP) {
