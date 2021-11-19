@@ -435,6 +435,11 @@ struct WasmSym {
   // linear memory.
   static GlobalSymbol *stackPointer;
 
+  // __data_pointer
+  // Global that holds the address of the base of MSWasm's segment for constant
+  // data.
+  static GlobalSymbol *dataPointer;
+
   // __tls_base
   // Global that holds the address of the base of the current thread's
   // TLS block.

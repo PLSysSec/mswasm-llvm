@@ -89,12 +89,14 @@ MCSymbol *WebAssemblyMCInstLower::GetExternalSymbolSymbol(
   // Clang-provided symbols.
   if (strcmp(Name, "__stack_pointer") == 0 || strcmp(Name, "__tls_base") == 0 ||
       strcmp(Name, "__memory_base") == 0 || strcmp(Name, "__table_base") == 0 ||
-      strcmp(Name, "__tls_size") == 0 || strcmp(Name, "__tls_align") == 0) {
+      strcmp(Name, "__tls_size") == 0 || strcmp(Name, "__tls_align") == 0 ||
+      strcmp(Name, "__data_pointer") == 0) {
     bool Mutable =
         strcmp(Name, "__stack_pointer") == 0 || strcmp(Name, "__tls_base") == 0;
     WasmSym->setType(wasm::WASM_SYMBOL_TYPE_GLOBAL);
     uint8_t globalType = uint8_t(
-      strcmp(Name, "__stack_pointer") == 0 ? wasm::WASM_TYPE_HANDLE
+      strcmp(Name, "__stack_pointer") == 0 || strcmp(Name, "__data_pointer") == 0
+      ? wasm::WASM_TYPE_HANDLE
       : Subtarget.hasAddr64() && strcmp(Name, "__table_base") != 0
                     ? wasm::WASM_TYPE_I64
                     : wasm::WASM_TYPE_I32

@@ -92,8 +92,7 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   // allocated/initialized)
   for (size_t i = 0; i < Node->getNumOperands(); ++i) {
     SDValue Op = Node->getOperand(i);
-    if ((Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress) &&
-        Op.getValueType().getSimpleVT() == MVT::iFATPTR64) {
+    if ((Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress)) {
       const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
       LLVM_DEBUG(dbgs() << "Found global " << GV->getName() << "\n");
       TM.Globals.insert(GV);

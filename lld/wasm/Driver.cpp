@@ -533,6 +533,10 @@ static GlobalSymbol *createGlobalVariable(StringRef name, bool isMutable,
     wasmGlobal.Type = {WASM_TYPE_HANDLE, isMutable};
     wasmGlobal.InitExpr.Opcode = WASM_OPCODE_HANDLE_NULL;
     //wasmGlobal.InitExpr.Value.Handle = value; // we don't set .Value for HANDLE_NULL
+  } else if (name == "__data_pointer") {
+    // MSWasm's special pointer to a data segment
+    wasmGlobal.Type = {WASM_TYPE_HANDLE, isMutable};
+    wasmGlobal.InitExpr.Opcode = WASM_OPCODE_HANDLE_NULL;
   }
   else if (config->is64) {
     wasmGlobal.Type = {WASM_TYPE_I64, isMutable};
@@ -591,6 +595,10 @@ static void createSyntheticSymbols() {
     WasmSym::stackPointer = createGlobalVariable("__stack_pointer", true, 0);
     WasmSym::stackPointer->markLive();
   }
+
+  // Initialize MSWasm data pointer
+  WasmSym::dataPointer = createGlobalVariable("__data_pointer", true, 0);
+  WasmSym::dataPointer->markLive();
 
   if (config->sharedMemory && !config->shared) {
     // Passive segments are used to avoid memory being reinitialized on each

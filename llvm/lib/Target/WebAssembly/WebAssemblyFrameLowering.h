@@ -53,6 +53,12 @@ public:
                        MachineBasicBlock::iterator &InsertStore,
                        const DebugLoc &DL) const;
 
+  /// Write MSWasm's data pointer to __data_pointer global
+  void writeDPToGlobal(unsigned SrcReg, MachineFunction &MF,
+                       MachineBasicBlock &MBB,
+                       MachineBasicBlock::iterator &InsertStore,
+                       const DebugLoc &DL) const;
+
   /// Write a global address to corresponding named global.
   void writeGlobalAddrToGlobal(const GlobalValue *GV, unsigned SrcReg,
                                MachineFunction &MF, MachineBasicBlock &MBB,

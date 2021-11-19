@@ -203,6 +203,19 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
       .addReg(SrcReg);
 }
 
+void WebAssemblyFrameLowering::writeDPToGlobal(
+    unsigned SrcReg, MachineFunction &MF, MachineBasicBlock &MBB,
+    MachineBasicBlock::iterator &InsertStore, const DebugLoc &DL) const {
+  const auto *TII = MF.getSubtarget<WebAssemblySubtarget>().getInstrInfo();
+
+  const char *ES = "__data_pointer";
+  auto *DPSymbol = MF.createExternalSymbolName(ES);
+
+  BuildMI(MBB, InsertStore, DL, TII->get(getOpcGlobSetHandle(MF)))
+      .addExternalSymbol(DPSymbol)
+      .addReg(SrcReg);
+}
+
 void WebAssemblyFrameLowering::writeGlobalAddrToGlobal(
     const GlobalValue *GV, unsigned SrcReg, MachineFunction &MF,
     MachineBasicBlock &MBB, MachineBasicBlock::iterator &InsertStore,
@@ -246,7 +259,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
 
   bool isMain = MF.getFunction().getName() == "main";
 
-  if (!needsSP(MF) && !isMain)
+  if (!needsSP(MF))
     return;
   uint64_t StackSize = MFI.getStackSize();
 
@@ -313,6 +326,11 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   auto *SPSymbol = MF.createExternalSymbolName(SPSymbolName);
   BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
       .addExternalSymbol(SPSymbol);
+
+  const char *DPSymbolName = "__data_pointer";
+  auto *DPSymbol = MF.createExternalSymbolName(DPSymbolName);
+  BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
+      .addExternalSymbol(DPSymbol);
 
   bool HasBP = hasBP(MF);
   if (HasBP) {
