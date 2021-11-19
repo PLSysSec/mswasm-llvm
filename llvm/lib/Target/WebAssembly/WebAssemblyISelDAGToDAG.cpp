@@ -22,6 +22,8 @@
 #include "llvm/Support/KnownBits.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/MC/MCSymbolWasm.h"
+#include "llvm/MC/MCSectionWasm.h"
 using namespace llvm;
 
 #define DEBUG_TYPE "wasm-isel"
@@ -85,19 +87,6 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   auto GlobalGetIns = WebAssembly::GLOBAL_GET_I64;
   auto ConstIns = WebAssembly::CONST_I32;
   auto AddIns = WebAssembly::ADD_I32;
-
-  // pretty hacky, but here we catch all globals and make sure they
-  // are added to the list of globals we maintain
-  // (later we use that list to ensure all globals' segments are
-  // allocated/initialized)
-  for (size_t i = 0; i < Node->getNumOperands(); ++i) {
-    SDValue Op = Node->getOperand(i);
-    if ((Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress)) {
-      const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
-      LLVM_DEBUG(dbgs() << "Found global " << GV->getName() << "\n");
-      TM.Globals.insert(GV);
-    }
-  }
 
   // Few custom selection stuff.
   SDLoc DL(Node);
@@ -268,43 +257,6 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
         CurDAG->getMachineNode(Results, DL, Node->getVTList(), Link);
     ReplaceNode(Node, CallResults);
     return;
-  }
-
-  case WebAssemblyISD::Wrapper: {
-    // Here we handle `Wrapper`s which weren't handled as part of `Call` above.
-    // The case we need to worry about is Wrapper around TargetGlobalAddress,
-    // which gets the address of a (LLVM) global. For MS-Wasm this needs to
-    // return a `handle`. We will store this `handle` in a Wasm global; at the
-    // beginning of the program we will allocate and initialize all such globals
-    // and put their handles in the appropriate Wasm globals. So, here, we just
-    // need to do a global.get to produce the `handle` the TargetGlobalAddress
-    // is looking for.
-    SDValue Op = Node->getOperand(0);
-    if (Op->getOpcode() == ISD::TargetGlobalAddress) {
-      const GlobalAddressSDNode* GA = cast<GlobalAddressSDNode>(Op);
-      if (GA->getAddressSpace() != 200) {
-        break;
-      }
-      assert(GA->getOffset() == 0); // later we can handle this by emitting both global.get and handle.add
-      const GlobalValue* GV = GA->getGlobal();
-      LLVM_DEBUG(dbgs() << "TargetGlobalAddress is getting the address of " << GV->getName() << "\n");
-      // At this point in the pipeline we refer to globals based on their export
-      // name (symbol name) instead of by index. We also keep a list of globals
-      // in TM.Globals.
-      TM.Globals.insert(GV);
-
-      // We copy the global name to the heap to avoid memory corruption
-      std::string GlobId = TM.getSymbol(GV)->getName().str();
-      char* globname = new char[GlobId.length() + 1];
-      strncpy(globname, GlobId.c_str(), GlobId.length() + 1);
-
-      assert(globname && strlen(globname) > 0 && "global should have a non-empty name");
-      const SDValue GlobSymbol = CurDAG->getTargetExternalSymbol(globname, MVT::i32);
-      MachineSDNode *GlobalGetNode = CurDAG->getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, GlobSymbol);
-      ReplaceNode(Node, GlobalGetNode);
-      return;
-    }
-    break;
   }
 
   default:

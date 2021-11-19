@@ -1274,6 +1274,18 @@ SDValue WebAssemblyTargetLowering::LowerGlobalAddress(SDValue Op,
     }
   }
 
+  // Overwrite pointer globals to use the data segment
+  if (VT.getSimpleVT() == MVT::iFATPTR64) {
+    LLVM_DEBUG(dbgs() << "\nReplacing pointer access to '" << (GA->getGlobal())->getName() << "' with reference into data segment");
+    const char *DPSymbolName = "__data_pointer";
+    const SDValue DPSymbol = DAG.getTargetExternalSymbol(DPSymbolName, MVT::i32);
+    MachineSDNode *DPNode = DAG.getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, DPSymbol);
+
+    SDValue TargetGlobAddr = DAG.getNode(WebAssemblyISD::Wrapper, DL, MVT::i32,
+        DAG.getTargetGlobalAddress(GA->getGlobal(), DL, MVT::i32, GA->getOffset(), OperandFlags));
+    return SDValue(DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, SDValue(DPNode, 0), TargetGlobAddr), 0);
+  }
+
   return DAG.getNode(WebAssemblyISD::Wrapper, DL, VT,
                      DAG.getTargetGlobalAddress(GA->getGlobal(), DL, VT,
                                                 GA->getOffset(), OperandFlags));

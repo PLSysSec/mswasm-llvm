@@ -140,15 +140,6 @@ MCSymbol *MCContext::getOrCreateSymbol(const Twine &Name) {
   MCSymbol *&Sym = Symbols[NameRef];
   if (!Sym) {
     Sym = createSymbol(NameRef, false, false);
-    // Hardcode in global behavior for certain symbols
-    if (NameRef.equals("errno") || NameRef.equals("__libc") ||
-        NameRef.equals("__stdout_FILE") || NameRef.equals("__stdout_used") ||
-        NameRef.equals("__stdin_used") || NameRef.equals("__stderr_used") ||
-        NameRef.equals("stderr") || NameRef.equals("__stderr_FILE") ||
-        NameRef.equals("__malloc_replaced")) {
-      cast<MCSymbolWasm>(Sym)->setType(wasm::WASM_SYMBOL_TYPE_GLOBAL);
-      cast<MCSymbolWasm>(Sym)->setGlobalType(wasm::WasmGlobalType{wasm::WASM_TYPE_HANDLE, true});
-    }
   }
 
   return Sym;
