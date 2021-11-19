@@ -82,9 +82,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   }
 
   MVT PtrVT = TLI->getPointerTy(CurDAG->getDataLayout());
-  auto GlobalGetIns = WebAssembly::GLOBAL_GET_HANDLE;
+  auto GlobalGetIns = WebAssembly::GLOBAL_GET_I64;
   auto ConstIns = WebAssembly::CONST_I32;
-  auto AddIns = WebAssembly::HANDLE_ADD;
+  auto AddIns = WebAssembly::ADD_I32;
 
   // pretty hacky, but here we catch all globals and make sure they
   // are added to the list of globals we maintain
@@ -92,7 +92,8 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
   // allocated/initialized)
   for (size_t i = 0; i < Node->getNumOperands(); ++i) {
     SDValue Op = Node->getOperand(i);
-    if (Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress) {
+    if ((Op.getOpcode() == ISD::GlobalAddress || Op.getOpcode() == ISD::TargetGlobalAddress) &&
+        Op.getValueType().getSimpleVT() == MVT::iFATPTR64) {
       const GlobalValue* GV = cast<GlobalAddressSDNode>(Op)->getGlobal();
       LLVM_DEBUG(dbgs() << "Found global " << GV->getName() << "\n");
       TM.Globals.insert(GV);
@@ -167,11 +168,11 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
         GA->getGlobal(), DL, PtrVT, GA->getOffset(), 0);
 
     MachineSDNode *TLSBase =
-        CurDAG->getMachineNode(GlobalGetIns, DL, PtrVT, TLSBaseSym);
+        CurDAG->getMachineNode(GlobalGetIns, DL, MVT::i32, TLSBaseSym);
     MachineSDNode *TLSOffset =
         CurDAG->getMachineNode(ConstIns, DL, MVT::i32, TLSOffsetSym);
     MachineSDNode *TLSAddress = CurDAG->getMachineNode(
-        AddIns, DL, PtrVT, SDValue(TLSBase, 0), SDValue(TLSOffset, 0));
+        AddIns, DL, MVT::i32, SDValue(TLSBase, 0), SDValue(TLSOffset, 0));
     ReplaceNode(Node, TLSAddress);
     return;
   }
@@ -282,7 +283,9 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
     SDValue Op = Node->getOperand(0);
     if (Op->getOpcode() == ISD::TargetGlobalAddress) {
       const GlobalAddressSDNode* GA = cast<GlobalAddressSDNode>(Op);
-      assert(GA->getAddressSpace() == 200);
+      if (GA->getAddressSpace() != 200) {
+        break;
+      }
       assert(GA->getOffset() == 0); // later we can handle this by emitting both global.get and handle.add
       const GlobalValue* GV = GA->getGlobal();
       LLVM_DEBUG(dbgs() << "TargetGlobalAddress is getting the address of " << GV->getName() << "\n");

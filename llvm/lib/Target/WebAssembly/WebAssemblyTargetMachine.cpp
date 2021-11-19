@@ -130,7 +130,7 @@ static std::string computeDataLayout(const Triple &TT, StringRef FS) {
     CapTypes = "-pf200:64:64:64:32";
 
   // For MS-Wasm, it's always a "CheriPureCapABI"
-  PurecapOptions = "-A200-P200-G200";
+  PurecapOptions = "-A200-P0-G200";
 
   return (BaseLayout + CapTypes + PurecapOptions).str();
 }

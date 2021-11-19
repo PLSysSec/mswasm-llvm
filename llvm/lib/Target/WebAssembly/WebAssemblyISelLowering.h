@@ -57,7 +57,9 @@ private:
   #else
                    uint32_t AS) const override {
   #endif
-    return MVT::iFATPTR64;
+    if (DL.isFatPointer(AS))
+      return MVT::getFatPointerVT(DL.getPointerSizeInBits(AS));
+    return MVT::getIntegerVT(DL.getPointerSizeInBits(AS));
   }
 
   AtomicExpansionKind shouldExpandAtomicRMWInIR(AtomicRMWInst *) const override;

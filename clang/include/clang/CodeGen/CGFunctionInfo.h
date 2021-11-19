@@ -303,11 +303,6 @@ public:
 
   void setCoerceToType(llvm::Type *T) {
     assert(canHaveCoerceToType() && "Invalid kind!");
-    if (T) {
-      if (llvm::PointerType* pt = dyn_cast<llvm::PointerType>(T)) {
-        assert(pt->getAddressSpace() == 200);
-      }
-    }
     TypeData = T;
   }
 

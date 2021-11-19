@@ -60,7 +60,7 @@ add_llvm_target(WebAssemblyCodeGen
 )
 
 # TODO: remove
-add_definitions(-DLLVM_TARGETLOWERINGINFO_DEFAULT_AS=0)
+add_definitions(-DLLVM_TARGETLOWERINGINFO_DEFAULT_AS=200)
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)

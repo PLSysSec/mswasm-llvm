@@ -69,7 +69,9 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   computeRegisterProperties(Subtarget->getRegisterInfo());
 
   setOperationAction(ISD::GlobalAddress, MVTPtr, Custom);
+  setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
   setOperationAction(ISD::ExternalSymbol, MVTPtr, Custom);
+  setOperationAction(ISD::ExternalSymbol, MVT::i32, Custom);
   setOperationAction(ISD::JumpTable, MVTPtr, Custom);
   setOperationAction(ISD::BlockAddress, MVTPtr, Custom);
   setOperationAction(ISD::BRIND, MVT::Other, Custom);
@@ -1241,8 +1243,6 @@ SDValue WebAssemblyTargetLowering::LowerGlobalAddress(SDValue Op,
   EVT VT = Op.getValueType();
   assert(GA->getTargetFlags() == 0 &&
          "Unexpected target flags on generic GlobalAddressSDNode");
-  if (GA->getAddressSpace() != 200)
-    fail(DL, DAG, "MS-Wasm only expects the 200 address space");
 
   unsigned OperandFlags = 0;
   if (isPositionIndependent()) {
