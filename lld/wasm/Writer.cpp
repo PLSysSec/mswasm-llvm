@@ -57,6 +57,7 @@ private:
   bool needsPassiveInitialization(const OutputSegment *segment);
   bool hasPassiveInitializedSegments();
 
+  void createInitStackFunction();
   void createInitMemoryFunction();
   void createApplyRelocationsFunction();
   void createCallCtorsFunction();
@@ -766,6 +767,32 @@ bool Writer::hasPassiveInitializedSegments() {
                       }) != segments.end();
 }
 
+void Writer::createInitStackFunction() {
+  LLVM_DEBUG(dbgs() << "createInitStackFunction\n");
+  std::string bodyContent;
+  {
+    raw_string_ostream os(bodyContent);
+    // (func $__mswasm_init_stack
+    //   i32.const 2097152
+    //   new_segment
+    //   i32.const 2097152
+    //   handle.add
+    //   global.set 0
+    // )
+
+    writeUleb128(os, 0, "num locals");
+    writeI32Const(os, 2097152, "stack size");
+    writeU8(os, WASM_OPCODE_NEW_SEGMENT, "allocate stack");
+    writeI32Const(os, 2097152, "stack size");
+    writeU8(os, WASM_OPCODE_HANDLE_ADD, "pointer to bottom of stack");
+    writeU8(os, WASM_OPCODE_GLOBAL_SET, "global.set");
+    writeUleb128(os, WasmSym::stackPointer->getGlobalIndex(), "stack global index");
+    writeU8(os, WASM_OPCODE_END, "END");
+  }
+
+  createFunction(WasmSym::initStack, bodyContent);
+}
+
 void Writer::createInitMemoryFunction() {
   LLVM_DEBUG(dbgs() << "createInitMemoryFunction\n");
   assert(WasmSym::initMemoryFlag);
@@ -927,6 +954,10 @@ void Writer::createCallCtorsFunction() {
                    "function index");
     }
 
+    // Call stack init function
+    writeU8(os, WASM_OPCODE_CALL, "CALL");
+    writeUleb128(os, WasmSym::initStack->getFunctionIndex(), "init stack function index");
+
     // Call constructors
     for (const WasmInitEntry &f : initFunctions) {
       writeU8(os, WASM_OPCODE_CALL, "CALL");
@@ -1079,6 +1110,7 @@ void Writer::run() {
       createApplyRelocationsFunction();
     createCallCtorsFunction();
   }
+  createInitStackFunction();
 
   if (!config->relocatable && config->sharedMemory && !config->shared)
     createInitTLSFunction();

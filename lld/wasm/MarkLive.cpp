@@ -101,6 +101,8 @@ void MarkLive::run() {
   if (config->sharedMemory && !config->shared)
     enqueue(WasmSym::initMemory);
 
+  enqueue(WasmSym::initStack);
+
   mark();
 }
 

@@ -471,6 +471,10 @@ struct WasmSym {
   // Function that initializes passive data segments during instantiation.
   static DefinedFunction *initMemory;
 
+  // __mswasm_init_stack
+  // Function that initializes the stack pointer during instantiation
+  static DefinedFunction *initStack;
+
   // __wasm_call_ctors
   // Function that directly calls all ctors in priority order.
   static DefinedFunction *callCtors;

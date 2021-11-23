@@ -596,6 +596,10 @@ static void createSyntheticSymbols() {
     WasmSym::stackPointer->markLive();
   }
 
+  WasmSym::initStack = symtab->addSyntheticFunction(
+      "__mswasm_init_stack", WASM_SYMBOL_VISIBILITY_DEFAULT,
+      make<SyntheticFunction>(nullSignature, "__mswasm_init_stack"));
+
   // Initialize MSWasm data pointer
   WasmSym::dataPointer = createGlobalVariable("__data_pointer", true, 0);
   WasmSym::dataPointer->markLive();

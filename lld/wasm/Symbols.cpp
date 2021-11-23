@@ -67,6 +67,7 @@ std::string toString(wasm::Symbol::Kind kind) {
 namespace wasm {
 DefinedFunction *WasmSym::callCtors;
 DefinedFunction *WasmSym::initMemory;
+DefinedFunction *WasmSym::initStack;
 DefinedFunction *WasmSym::applyRelocs;
 DefinedFunction *WasmSym::initTLS;
 DefinedData *WasmSym::dsoHandle;
