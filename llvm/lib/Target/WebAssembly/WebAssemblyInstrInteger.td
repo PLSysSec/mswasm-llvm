@@ -105,6 +105,16 @@ defm HANDLE_SUB : I<(outs HANDLE:$dst), (ins HANDLE:$h, offset32_op:$off), (outs
                     "handle.sub", 0xfa>;
 */
 
+defm HANDLE_EQ : I<(outs I32:$dst), (ins HANDLE:$lhs, HANDLE:$rhs), (outs), (ins),
+                   [(set I32:$dst, (setcc HANDLE:$lhs, HANDLE:$rhs, SETEQ))],
+                   "handle.eq \t$dst, $lhs, $rhs",
+                   "handle.eq", 0xfd>;
+
+defm HANDLE_LT : I<(outs I32:$dst), (ins HANDLE:$lhs, HANDLE:$rhs), (outs), (ins),
+                   [(set I32:$dst, (setcc HANDLE:$lhs, HANDLE:$rhs, SETLT))],
+                   "handle.lt \t$dst, $lhs, $rhs",
+                   "handle.lt", 0xfe>;
+
 defm HANDLE_GET_OFFSET : I<(outs I32:$dst), (ins HANDLE:$h), (outs), (ins),
                            [(set I32:$dst, (ptrtoint HANDLE:$h))],
                            "handle.get_offset \t$dst, $h",

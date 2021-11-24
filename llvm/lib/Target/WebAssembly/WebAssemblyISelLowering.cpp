@@ -125,8 +125,12 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   setOperationAction(ISD::INTTOPTR, MVT::iFATPTR64, Custom);
   setOperationAction(ISD::BR_CC, MVT::iFATPTR64, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::iFATPTR64, Expand);
-  for (unsigned CC = 0; CC < ISD::SETCC_INVALID; ++CC)
+  for (auto CC : {ISD::SETOEQ, ISD::SETUEQ, ISD::SETOLT, ISD::SETULT, ISD::SETO, ISD::SETUO})
     setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Custom);
+  for (auto CC : {ISD::SETONE, ISD::SETUNE, ISD::SETNE, ISD::SETOGT, ISD::SETUGT, ISD::SETGT,
+                  ISD::SETOGE, ISD::SETUGE, ISD::SETGE, ISD::SETOLE, ISD::SETULE, ISD::SETLE})
+    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Expand);
+
   // Account for attempts to use integer operations on handles
   for (auto Op : {ISD::OR, ISD::XOR, ISD::ADD, ISD::SUB})
     setOperationAction(Op, MVT::iFATPTR64, Custom);
@@ -1659,17 +1663,28 @@ SDValue WebAssemblyTargetLowering::LowerSETCC(SDValue Op,
                                               SelectionDAG &DAG) const {
   SDLoc DL(Op);
   if (Op->getOperand(0)->getSimpleValueType(0) == MVT::iFATPTR64) {
-    // Ideally, handles should be compared on all of (base, bound, offset).
-    // In the absence of a direct handle comparison instruction, we compare
-    // just on the offset, which turns the handle comparison into a simple i32
-    // comparison.
-    SDValue LHS(DAG.getMachineNode(WebAssembly::HANDLE_GET_OFFSET, DL, 
-                                   MVT::i32, Op->getOperand(0)), 0);
-    SDValue RHS(DAG.getMachineNode(WebAssembly::HANDLE_GET_OFFSET, DL,
-                                   MVT::i32, Op->getOperand(1)), 0);
-    const SDValue &CC = Op->getOperand(2);
+    llvm::ISD::CondCode CC = cast<CondCodeSDNode>(Op->getOperand(2))->get();
+    MVT Ty = MVT::i32;
+    SDValue LHS = Op->getOperand(0);
+    SDValue RHS = Op->getOperand(1);
 
-    return DAG.getNode(ISD::SETCC, DL, MVT::i32, LHS, RHS, CC);
+    switch(CC) {
+    case ISD::SETOEQ:
+    case ISD::SETUEQ:
+      return DAG.getNode(ISD::SETCC, DL, Ty, LHS, RHS, DAG.getCondCode(ISD::SETEQ));
+    case ISD::SETOLT:
+    case ISD::SETULT:
+      return DAG.getNode(ISD::SETCC, DL, Ty, LHS, RHS, DAG.getCondCode(ISD::SETLT));
+    case ISD::SETO:
+      return DAG.getNode(ISD::SETCC, DL, Ty, DAG.getCondCode(ISD::SETTRUE));
+    case ISD::SETUO:
+      return DAG.getNode(ISD::SETCC, DL, Ty, DAG.getCondCode(ISD::SETFALSE));
+    default:
+      llvm_unreachable("Unexpected comparison opcode on handles");
+    }
+
+    assert(cast<CondCodeSDNode>(Op->getOperand(2))->get() == ISD::SETUO && "Unsupported handle comparison");
+    return DAG.getNode(ISD::SETCC, DL, MVT::iFATPTR64, DAG.getCondCode(ISD::SETFALSE));
   }
 
   // The legalizer does not know how to expand the comparison modes of i64x2
