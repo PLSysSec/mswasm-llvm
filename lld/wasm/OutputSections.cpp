@@ -157,6 +157,17 @@ void DataSection::finalizeContents() {
       }
       writeInitExpr(os, initExpr);
     }
+    // write pointer offsets
+    uint32_t numPointers = 0;
+    for (InputSegment *inputSeg : segment->inputSegments) {
+      numPointers += inputSeg->getPointerOffsets().size();
+    }
+    writeUleb128(os, numPointers, "num pointers");
+    for (InputSegment *inputSeg : segment->inputSegments) {
+      for (uint32_t PointerOffset : inputSeg->getPointerOffsets()) {
+        writeUleb128(os, PointerOffset, "pointer offset or size");
+      }
+    }
     writeUleb128(os, segment->size, "segment size");
     os.flush();
 

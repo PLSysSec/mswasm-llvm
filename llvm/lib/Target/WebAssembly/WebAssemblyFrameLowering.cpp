@@ -257,8 +257,6 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   assert(MFI.getCalleeSavedInfo().empty() &&
          "WebAssembly should not have callee-saved registers");
 
-  // bool isMain = MF.getFunction().getName() == "main";
-
   if (!needsSP(MF))
     return;
   uint64_t StackSize = MFI.getStackSize();
@@ -273,48 +271,6 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
     ++InsertPt;
   DebugLoc DL;
 
-  // // kinda ugly and there's probably a better place to do this, but here works.
-  // // For the main() function specifically, inject instructions at the top of
-  // // main() to :
-  // //   - allocate the stack and store the handle in the appropriate global
-  // //   - allocate and initialize other (LLVM) globals, and store the handles
-  // //     in appropriate (Wasm) globals. This only needs to be done for LLVM
-  // //     globals which we take the address of (eg, global arrays, including
-  // //     static strings). Other LLVM globals are handled elsewhere.
-  // if (isMain || isOtherMain) {
-  //   // allocate the stack
-  //   const uint64_t ALLOCATED_STACK_SIZE_BYTES = 2 * 1024 * 1024; // we arbitrary choose to allocate 2MB for the stack
-  //   const TargetRegisterClass *I32RC =
-  //       MRI.getTargetRegisterInfo()->getI32RegClass(MF);
-  //   Register stack_size_bytes = MRI.createVirtualRegister(I32RC);
-  //   BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), stack_size_bytes)
-  //     .addImm(ALLOCATED_STACK_SIZE_BYTES);
-  //   const TargetRegisterClass *PtrRC =
-  //     MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
-  //   Register temp_stackptr = MRI.createVirtualRegister(PtrRC);
-  //   BuildMI(MBB, InsertPt, DL, TII->get(getOpcNewSegment(MF)), temp_stackptr)
-  //     .addReg(stack_size_bytes);
-  //   // since the stack grows down (towards 0), we actually need to initialize
-  //   // the stack pointer at the "end" (high end) of the allocated segment
-  //   Register high_stackptr = MRI.createVirtualRegister(PtrRC);
-  //   BuildMI(MBB, InsertPt, DL, TII->get(getOpcHandleAdd(MF)), high_stackptr)
-  //     .addReg(temp_stackptr)
-  //     .addReg(stack_size_bytes);
-  //   // store the handle to the allocated stack in the appropriate global
-  //   writeSPToGlobal(high_stackptr, MF, MBB, InsertPt, DL);
-  //   // now do other LLVM globals
-  //   const LLVMTargetMachine &TM = MF.getTarget();
-  //   for (const GlobalValue *global : TM.Globals) {
-  //     const uint64_t global_size_bytes = MF.getDataLayout().getTypeStoreSize(global->getType()).getFixedSize();
-  //     Register global_size_bytes_const = MRI.createVirtualRegister(I32RC);
-  //     BuildMI(MBB, InsertPt, DL, TII->get(getOpcConst(MF)), global_size_bytes_const)
-  //       .addImm(global_size_bytes);
-  //     Register globalptr = MRI.createVirtualRegister(PtrRC);
-  //     BuildMI(MBB, InsertPt, DL, TII->get(getOpcNewSegment(MF)), globalptr)
-  //       .addReg(global_size_bytes_const);
-  //     writeGlobalAddrToGlobal(global, globalptr, MF, MBB, InsertPt, DL);
-  //   }
-  // }
 
   const TargetRegisterClass *PtrRC =
       MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
@@ -326,9 +282,6 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   auto *SPSymbol = MF.createExternalSymbolName(SPSymbolName);
   BuildMI(MBB, InsertPt, DL, TII->get(getOpcGlobGetHandle(MF)), SPReg)
       .addExternalSymbol(SPSymbol);
-
-  const char *DPSymbolName = "__data_pointer";
-  auto *DPSymbol = MF.createExternalSymbolName(DPSymbolName);
 
   bool HasBP = hasBP(MF);
   if (HasBP) {

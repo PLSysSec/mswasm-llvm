@@ -148,6 +148,7 @@ struct WasmDataSegment {
   uint32_t Alignment;
   uint32_t LinkerFlags;
   uint32_t Comdat; // from the "comdat info" section
+  std::vector<uint32_t> PointerOffsets;
 };
 
 struct WasmElemSegment {

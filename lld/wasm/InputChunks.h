@@ -105,6 +105,7 @@ public:
   uint32_t getInputSectionOffset() const override {
     return segment.SectionOffset;
   }
+  std::vector<uint32_t> getPointerOffsets() { return segment.Data.PointerOffsets; }
 
   const OutputSegment *outputSeg = nullptr;
   int32_t outputSegmentOffset = 0;

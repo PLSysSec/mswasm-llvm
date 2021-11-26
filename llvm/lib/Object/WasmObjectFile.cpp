@@ -1274,6 +1274,10 @@ Error WasmObjectFile::parseDataSection(ReadContext &Ctx) {
       Segment.Data.Offset.Opcode = wasm::WASM_OPCODE_I32_CONST;
       Segment.Data.Offset.Value.Int32 = 0;
     }
+    uint32_t NumPointers = readVaruint32(Ctx);
+    while (NumPointers--) {
+      Segment.Data.PointerOffsets.push_back(readVaruint32(Ctx));
+    }
     uint32_t Size = readVaruint32(Ctx);
     if (Size > (size_t)(Ctx.End - Ctx.Ptr))
       return make_error<GenericBinaryError>("Invalid segment size",

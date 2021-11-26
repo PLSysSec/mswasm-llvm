@@ -113,6 +113,7 @@ struct WasmDataSegment {
   uint32_t Alignment;
   uint32_t LinkerFlags;
   SmallVector<char, 4> Data;
+  SmallVector<uint32_t, 4> PointerOffsets;
 };
 
 // A wasm function to be written into the function section.
@@ -964,6 +965,9 @@ uint32_t WasmObjectWriter::writeDataSection(const MCAsmLayout &Layout) {
       encodeSLEB128(Segment.Offset, W.OS); // offset
       W.OS << char(wasm::WASM_OPCODE_END);
     }
+    encodeULEB128(Segment.PointerOffsets.size(), W.OS); // Number of pointer offsets
+    for (uint32_t PointerOffset : Segment.PointerOffsets)
+      encodeULEB128(PointerOffset, W.OS);
     encodeULEB128(Segment.Data.size(), W.OS); // size
     Segment.Section->setSectionOffset(W.OS.tell() - Section.ContentsOffset);
     W.OS << Segment.Data; // data
@@ -1466,6 +1470,13 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       wasm::WasmDataReference Ref = wasm::WasmDataReference{
           DataSection.getSegmentIndex(), Layout.getSymbolOffset(WS),
           static_cast<uint64_t>(Size)};
+
+      // Encode the location of known pointers in global structs
+      if (WS.getName() == "__stdout_FILE") {
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 80);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(1024);
+      }
+
       DataLocations[&WS] = Ref;
       LLVM_DEBUG(dbgs() << "  -> segment index: " << Ref.Segment << "\n");
 
