@@ -1473,6 +1473,18 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
 
       // Encode the location of known pointers in global structs
       if (WS.getName() == "__stdout_FILE") {
+        // null fields: rpos, rend, wend, wpos, wbase
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 8);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(0);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 16);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(0);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 32);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(0);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 40);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(0);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 48);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(0);
+        // stdout->buf = new_segment
         DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 80);
         DataSegments[Ref.Segment].PointerOffsets.push_back(1024);
       }
