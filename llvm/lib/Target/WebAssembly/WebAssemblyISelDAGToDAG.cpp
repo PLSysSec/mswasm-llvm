@@ -240,6 +240,18 @@ void WebAssemblyDAGToDAGISel::Select(SDNode *Node) {
       SDValue Op = Node->getOperand(i);
       if (i == 1 && Op->getOpcode() == WebAssemblyISD::Wrapper)
         Op = Op->getOperand(0);
+
+      // catch printf & check for integer argument as variadic pointer
+      if (i == 3 && Node->getOperand(1).getNumOperands() > 0) {
+        SDValue GlobOp = Node->getOperand(1).getOperand(0);
+        if (GlobOp.getOpcode() == ISD::TargetGlobalAddress && 
+            cast<GlobalAddressSDNode>(GlobOp)->getGlobal()->getName() == "printf" &&
+            Op.getSimpleValueType() == MVT::i32) {
+          assert(cast<ConstantSDNode>(Op)->getZExtValue() == 0 && "Unexpected integer argument to printf");
+          Op = SDValue(CurDAG->getMachineNode(WebAssembly::HANDLE_NULL, DL, MVT::iFATPTR64), 0);
+        }
+      }
+
       Ops.push_back(Op);
     }
 
