@@ -1192,6 +1192,10 @@ SDValue WebAssemblyTargetLowering::LowerIntToPtr(SDValue Op,
     SDLoc DL(Op);
     SDValue NullHandle(
       DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL,MVT::iFATPTR64), 0);
+    // Short circuit if the int in question is constant 0
+    if (DAG.isConstantValueOfAnyType(Op.getOperand(0)) && Op.getConstantOperandVal(0) == 0) {
+      return NullHandle;
+    }
     SDValue OffsetHandle(
       DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, 
                          NullHandle, Op.getOperand(0)), 0);
@@ -1780,10 +1784,12 @@ SDValue WebAssemblyTargetLowering::LowerShift(SDValue Op,
 
 SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
                                                  SelectionDAG &DAG) const {
-  MVT Op1Ty = Op.getOperand(0).getSimpleValueType();
-  MVT Op2Ty = Op.getOperand(1).getSimpleValueType();
-  assert((Op1Ty == MVT::iFATPTR64 || Op1Ty == MVT::i32) &&
-         (Op2Ty == MVT::iFATPTR64 || Op2Ty == MVT::i32) &&
+  SDValue Op1 = Op.getOperand(0);
+  SDValue Op2 = Op.getOperand(1);
+  MVT Op1Ty = Op1.getSimpleValueType();
+  MVT Op2Ty = Op2.getSimpleValueType();
+  assert((Op1Ty == MVT::iFATPTR64) &&
+         (Op2Ty == MVT::iFATPTR64) &&
          "Expected an operator on iFATPTR64");
 
   SDLoc DL(Op);
@@ -1793,6 +1799,24 @@ SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
   // its offset.
   switch (Op.getOpcode()) {
   case ISD::ADD:
+    // Check for extraneous int->ptr conversions
+    if (Op2.getOpcode() == ISD::INTTOPTR && Op1Ty == MVT::iFATPTR64) {
+      if (DAG.isConstantValueOfAnyType(Op2.getOperand(0)) && Op2.getConstantOperandVal(0) == 0) {
+        return Op1;
+      }
+      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64,
+          Op1, Op2.getOperand(0));
+      return SDValue(OffsetNode, 0);
+
+    } else if (Op1.getOpcode() == ISD::INTTOPTR && Op2Ty == MVT::iFATPTR64) {
+      if (DAG.isConstantValueOfAnyType(Op1.getOperand(0)) && Op1.getConstantOperandVal(0) == 0) {
+        return Op2;
+      }
+      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64,
+          Op2, Op1.getOperand(0));
+      return SDValue(OffsetNode, 0);
+    }
+
   case ISD::SUB:
   case ISD::XOR:
   case ISD::OR: {
