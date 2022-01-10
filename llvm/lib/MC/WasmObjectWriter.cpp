@@ -1486,7 +1486,7 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
         // stdout->buf = new_segment
         DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 80);
-        DataSegments[Ref.Segment].PointerOffsets.push_back(1024);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(1025);
       }
 
       DataLocations[&WS] = Ref;
