@@ -1474,18 +1474,18 @@ uint64_t WasmObjectWriter::writeObject(MCAssembler &Asm,
       // Encode the location of known pointers in global structs
       if (WS.getName() == "__stdout_FILE") {
         // null fields: rpos, rend, wend, wpos, wbase
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 8);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 8);
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 16);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 16);
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 32);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 32);
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 40);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 40);
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 48);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 48);
         DataSegments[Ref.Segment].PointerOffsets.push_back(0);
         // stdout->buf = new_segment
-        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 184 + 80);
+        DataSegments[Ref.Segment].PointerOffsets.push_back(Layout.getSymbolOffset(WS) + 192 + 80);
         DataSegments[Ref.Segment].PointerOffsets.push_back(1025);
       }
 
