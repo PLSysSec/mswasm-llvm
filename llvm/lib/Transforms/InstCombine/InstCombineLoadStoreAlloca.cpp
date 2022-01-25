@@ -565,7 +565,8 @@ static Instruction *combineLoadToOperationType(InstCombiner &IC, LoadInst &LI) {
       DL.typeSizeEqualsStoreSize(Ty) && !DL.isNonIntegralPointerType(Ty) &&
       !isMinMaxWithLoads(
           peekThroughBitcast(LI.getPointerOperand(), /*OneUseOnly=*/true),
-          Dummy)) {
+          Dummy) &&
+      !Ty->isPointerTy()) {
     if (all_of(LI.users(), [&LI](User *U) {
           auto *SI = dyn_cast<StoreInst>(U);
           return SI && SI->getPointerOperand() != &LI &&
