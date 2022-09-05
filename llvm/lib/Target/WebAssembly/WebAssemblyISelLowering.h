@@ -50,7 +50,7 @@ private:
   /// right decision when generating code for different targets.
   const WebAssemblySubtarget *Subtarget;
   
-  /// Override the pointer type for the address space to always return iFATPTR64
+  /// Override the pointer type for the address space to always return iFATPTR128
   MVT getPointerTy(const DataLayout &DL,
   #ifdef LLVM_TARGETLOWERINGINFO_DEFAULT_AS
                    uint32_t AS = LLVM_TARGETLOWERINGINFO_DEFAULT_AS) const override {

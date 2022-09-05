@@ -145,9 +145,9 @@ private:
       if (Subtarget->hasUnimplementedSIMD128())
         return VT;
       break;
-    case MVT::iFATPTR64:
+    case MVT::iFATPTR128:
     case MVT::iFATPTRAny:
-      return MVT::iFATPTR64;
+      return MVT::iFATPTR128;
     default:
       break;
     }
@@ -709,8 +709,8 @@ bool WebAssemblyFastISel::fastLowerArguments() {
       Opc = WebAssembly::ARGUMENT_exnref;
       RC = &WebAssembly::EXNREFRegClass;
       break;
-    case MVT::iFATPTR64:
-      Opc = WebAssembly::ARGUMENT_iFATPTR64;
+    case MVT::iFATPTR128:
+      Opc = WebAssembly::ARGUMENT_iFATPTR128;
       RC = &WebAssembly::HANDLERegClass;
       break;
     default:
@@ -814,7 +814,7 @@ bool WebAssemblyFastISel::selectCall(const Instruction *I) {
     case MVT::exnref:
       ResultReg = createResultReg(&WebAssembly::EXNREFRegClass);
       break;
-    case MVT::iFATPTR64:
+    case MVT::iFATPTR128:
       ResultReg = createResultReg(&WebAssembly::HANDLERegClass);
       break;
     default:
@@ -928,7 +928,7 @@ bool WebAssemblyFastISel::selectSelect(const Instruction *I) {
     Opc = WebAssembly::SELECT_EXNREF;
     RC = &WebAssembly::EXNREFRegClass;
     break;
-  case MVT::iFATPTR64:
+  case MVT::iFATPTR128:
     Opc = WebAssembly::SELECT_HANDLE;
     RC = &WebAssembly::HANDLERegClass;
     break;
@@ -1197,7 +1197,7 @@ bool WebAssemblyFastISel::selectLoad(const Instruction *I) {
     Opc = WebAssembly::LOAD_F64_handle;
     RC = &WebAssembly::F64RegClass;
     break;
-  case MVT::iFATPTR64:
+  case MVT::iFATPTR128:
     Opc = WebAssembly::LOAD_HANDLE_handle;
     RC = &WebAssembly::HANDLERegClass;
     break;
@@ -1253,7 +1253,7 @@ bool WebAssemblyFastISel::selectStore(const Instruction *I) {
   case MVT::f64:
     Opc = WebAssembly::STORE_F64_handle;
     break;
-  case MVT::iFATPTR64:
+  case MVT::iFATPTR128:
     Opc = WebAssembly::STORE_HANDLE_handle;
     break;
   default:
@@ -1339,7 +1339,7 @@ bool WebAssemblyFastISel::selectRet(const Instruction *I) {
   case MVT::v4f32:
   case MVT::v2f64:
   case MVT::exnref:
-  case MVT::iFATPTR64:
+  case MVT::iFATPTR128:
     break;
   default:
     return false;

@@ -66,4 +66,4 @@ def F64 : WebAssemblyRegClass<[f64], 64, (add F64_0)>;
 def V128 : WebAssemblyRegClass<[v4f32, v2f64, v2i64, v4i32, v16i8, v8i16], 128,
                                (add V128_0)>;
 def EXNREF : WebAssemblyRegClass<[exnref], 0, (add EXNREF_0)>;
-def HANDLE : WebAssemblyRegClass<[iFATPTR64], 64, (add HANDLE_0, FP32, FP64, SP32, SP64)>;
+def HANDLE : WebAssemblyRegClass<[iFATPTR128], 128, (add HANDLE_0, FP32, FP64, SP32, SP64)>;

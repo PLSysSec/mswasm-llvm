@@ -299,8 +299,8 @@ inline bool isArgument(unsigned Opc) {
   case WebAssembly::ARGUMENT_v2f64_S:
   case WebAssembly::ARGUMENT_exnref:
   case WebAssembly::ARGUMENT_exnref_S:
-  case WebAssembly::ARGUMENT_iFATPTR64:
-  case WebAssembly::ARGUMENT_iFATPTR64_S:
+  case WebAssembly::ARGUMENT_iFATPTR128:
+  case WebAssembly::ARGUMENT_iFATPTR128_S:
     return true;
   default:
     return false;

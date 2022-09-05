@@ -12,10 +12,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
-def : Pat<(int_cheri_cap_address_set iFATPTR64:$src, I32:$off), (HANDLE_ADD iFATPTR64:$src, I32:$off)>;
-def : Pat<(int_cheri_cap_address_get iFATPTR64:$src), (HANDLE_GET_OFFSET iFATPTR64:$src)>;
+def : Pat<(int_cheri_cap_address_set iFATPTR128:$src, I32:$off), (HANDLE_ADD iFATPTR128:$src, I32:$off)>;
+def : Pat<(int_cheri_cap_address_get iFATPTR128:$src), (HANDLE_GET_OFFSET iFATPTR128:$src)>;
 
 // We don't have a use for these currently, so these are just hacky placeholders to let us compile
-def : Pat<(int_cheri_cap_bounds_set iFATPTR64:$src, I32:$off), (HANDLE_ADD iFATPTR64:$src, 0)>;
+def : Pat<(int_cheri_cap_bounds_set iFATPTR128:$src, I32:$off), (HANDLE_ADD iFATPTR128:$src, 0)>;
 def : Pat<(int_cheri_round_representable_length I32:$op), (CONST_I32 I32:$op)>;
 def : Pat<(int_cheri_representable_alignment_mask I32:$op), (CONST_I32 I32:$op)>;

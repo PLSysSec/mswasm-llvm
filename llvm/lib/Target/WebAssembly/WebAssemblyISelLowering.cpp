@@ -40,7 +40,7 @@ using namespace llvm;
 WebAssemblyTargetLowering::WebAssemblyTargetLowering(
     const TargetMachine &TM, const WebAssemblySubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
-  auto MVTPtr = MVT::iFATPTR64;
+  auto MVTPtr = MVT::iFATPTR128;
 
   // Booleans always contain 0 or 1.
   setBooleanContents(ZeroOrOneBooleanContent);
@@ -56,7 +56,7 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
   addRegisterClass(MVT::i64, &WebAssembly::I64RegClass);
   addRegisterClass(MVT::f32, &WebAssembly::F32RegClass);
   addRegisterClass(MVT::f64, &WebAssembly::F64RegClass);
-  addRegisterClass(MVT::iFATPTR64, &WebAssembly::HANDLERegClass);
+  addRegisterClass(MVT::iFATPTR128, &WebAssembly::HANDLERegClass);
   if (Subtarget->hasSIMD128()) {
     addRegisterClass(MVT::v16i8, &WebAssembly::V128RegClass);
     addRegisterClass(MVT::v8i16, &WebAssembly::V128RegClass);
@@ -121,19 +121,19 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
         setOperationAction(Op, T, Expand);
   }
 
-  // Expand unavailable handle (iFATPTR64) operations
-  setOperationAction(ISD::INTTOPTR, MVT::iFATPTR64, Custom);
-  setOperationAction(ISD::BR_CC, MVT::iFATPTR64, Expand);
-  setOperationAction(ISD::SELECT_CC, MVT::iFATPTR64, Expand);
+  // Expand unavailable handle (iFATPTR128) operations
+  setOperationAction(ISD::INTTOPTR, MVT::iFATPTR128, Custom);
+  setOperationAction(ISD::BR_CC, MVT::iFATPTR128, Expand);
+  setOperationAction(ISD::SELECT_CC, MVT::iFATPTR128, Expand);
   for (auto CC : {ISD::SETOEQ, ISD::SETUEQ, ISD::SETOLT, ISD::SETULT, ISD::SETO, ISD::SETUO})
-    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Custom);
+    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR128, Custom);
   for (auto CC : {ISD::SETONE, ISD::SETUNE, ISD::SETNE, ISD::SETOGT, ISD::SETUGT, ISD::SETGT,
                   ISD::SETOGE, ISD::SETUGE, ISD::SETGE, ISD::SETOLE, ISD::SETULE, ISD::SETLE})
-    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR64, Expand);
+    setCondCodeAction(static_cast<ISD::CondCode>(CC), MVT::iFATPTR128, Expand);
 
   // Account for attempts to use integer operations on handles
   for (auto Op : {ISD::OR, ISD::XOR, ISD::ADD, ISD::SUB})
-    setOperationAction(Op, MVT::iFATPTR64, Custom);
+    setOperationAction(Op, MVT::iFATPTR128, Custom);
 
   // SIMD-specific configuration
   if (Subtarget->hasSIMD128()) {
@@ -227,7 +227,7 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
 
   setOperationAction(ISD::FrameIndex, MVT::i32, Custom);
   setOperationAction(ISD::FrameIndex, MVT::i64, Custom);
-  setOperationAction(ISD::FrameIndex, MVT::iFATPTR64, Custom);
+  setOperationAction(ISD::FrameIndex, MVT::iFATPTR128, Custom);
   setOperationAction(ISD::CopyToReg, MVT::Other, Custom);
 
   // Expand these forms; we pattern-match the forms that we can handle in isel.
@@ -1175,7 +1175,7 @@ SDValue WebAssemblyTargetLowering::LowerCopyToReg(SDValue Op,
     unsigned int Opc;
     if (VT == MVT::i32) Opc = WebAssembly::COPY_I32;
     else if (VT == MVT::i64) Opc = WebAssembly::COPY_I64;
-    else if (VT == MVT::iFATPTR64) Opc = WebAssembly::COPY_HANDLE;
+    else if (VT == MVT::iFATPTR128) Opc = WebAssembly::COPY_HANDLE;
     else assert("Unexpected VT");
     SDValue Copy(DAG.getMachineNode(Opc, DL, VT, Src), 0);
     return Op.getNode()->getNumValues() == 1
@@ -1191,13 +1191,13 @@ SDValue WebAssemblyTargetLowering::LowerIntToPtr(SDValue Op,
                                                  SelectionDAG &DAG) const {
     SDLoc DL(Op);
     SDValue NullHandle(
-      DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL,MVT::iFATPTR64), 0);
+      DAG.getMachineNode(WebAssembly::HANDLE_NULL, DL,MVT::iFATPTR128), 0);
     // Short circuit if the int in question is constant 0
     if (DAG.isConstantValueOfAnyType(Op.getOperand(0)) && Op.getConstantOperandVal(0) == 0) {
       return NullHandle;
     }
     SDValue OffsetHandle(
-      DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, 
+      DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR128, 
                          NullHandle, Op.getOperand(0)), 0);
     return OffsetHandle;
 }
@@ -1283,15 +1283,15 @@ SDValue WebAssemblyTargetLowering::LowerGlobalAddress(SDValue Op,
   }
 
   // Overwrite pointer globals to use the data segment
-  if (VT.getSimpleVT() == MVT::iFATPTR64) {
+  if (VT.getSimpleVT() == MVT::iFATPTR128) {
     LLVM_DEBUG(dbgs() << "\nReplacing pointer access to '" << (GA->getGlobal())->getName() << "' with reference into data segment");
     const char *DPSymbolName = "__data_pointer";
     const SDValue DPSymbol = DAG.getTargetExternalSymbol(DPSymbolName, MVT::i32);
-    MachineSDNode *DPNode = DAG.getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR64, DPSymbol);
+    MachineSDNode *DPNode = DAG.getMachineNode(WebAssembly::GLOBAL_GET_HANDLE, DL, MVT::iFATPTR128, DPSymbol);
 
     SDValue TargetGlobAddr = DAG.getNode(WebAssemblyISD::Wrapper, DL, MVT::i32,
         DAG.getTargetGlobalAddress(GA->getGlobal(), DL, MVT::i32, GA->getOffset(), OperandFlags));
-    return SDValue(DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64, SDValue(DPNode, 0), TargetGlobAddr), 0);
+    return SDValue(DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR128, SDValue(DPNode, 0), TargetGlobAddr), 0);
   }
 
   return DAG.getNode(WebAssemblyISD::Wrapper, DL, VT,
@@ -1666,7 +1666,7 @@ WebAssemblyTargetLowering::LowerVECTOR_SHUFFLE(SDValue Op,
 SDValue WebAssemblyTargetLowering::LowerSETCC(SDValue Op,
                                               SelectionDAG &DAG) const {
   SDLoc DL(Op);
-  if (Op->getOperand(0)->getSimpleValueType(0) == MVT::iFATPTR64) {
+  if (Op->getOperand(0)->getSimpleValueType(0) == MVT::iFATPTR128) {
     llvm::ISD::CondCode CC = cast<CondCodeSDNode>(Op->getOperand(2))->get();
     MVT Ty = MVT::i32;
     SDValue LHS = Op->getOperand(0);
@@ -1688,7 +1688,7 @@ SDValue WebAssemblyTargetLowering::LowerSETCC(SDValue Op,
     }
 
     assert(cast<CondCodeSDNode>(Op->getOperand(2))->get() == ISD::SETUO && "Unsupported handle comparison");
-    return DAG.getNode(ISD::SETCC, DL, MVT::iFATPTR64, DAG.getCondCode(ISD::SETFALSE));
+    return DAG.getNode(ISD::SETCC, DL, MVT::iFATPTR128, DAG.getCondCode(ISD::SETFALSE));
   }
 
   // The legalizer does not know how to expand the comparison modes of i64x2
@@ -1788,9 +1788,9 @@ SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
   SDValue Op2 = Op.getOperand(1);
   MVT Op1Ty = Op1.getSimpleValueType();
   MVT Op2Ty = Op2.getSimpleValueType();
-  assert((Op1Ty == MVT::iFATPTR64) &&
-         (Op2Ty == MVT::iFATPTR64) &&
-         "Expected an operator on iFATPTR64");
+  assert((Op1Ty == MVT::iFATPTR128) &&
+         (Op2Ty == MVT::iFATPTR128) &&
+         "Expected an operator on iFATPTR128");
 
   SDLoc DL(Op);
 
@@ -1800,19 +1800,19 @@ SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
   switch (Op.getOpcode()) {
   case ISD::ADD:
     // Check for extraneous int->ptr conversions
-    if (Op2.getOpcode() == ISD::INTTOPTR && Op1Ty == MVT::iFATPTR64) {
+    if (Op2.getOpcode() == ISD::INTTOPTR && Op1Ty == MVT::iFATPTR128) {
       if (DAG.isConstantValueOfAnyType(Op2.getOperand(0)) && Op2.getConstantOperandVal(0) == 0) {
         return Op1;
       }
-      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64,
+      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR128,
           Op1, Op2.getOperand(0));
       return SDValue(OffsetNode, 0);
 
-    } else if (Op1.getOpcode() == ISD::INTTOPTR && Op2Ty == MVT::iFATPTR64) {
+    } else if (Op1.getOpcode() == ISD::INTTOPTR && Op2Ty == MVT::iFATPTR128) {
       if (DAG.isConstantValueOfAnyType(Op1.getOperand(0)) && Op1.getConstantOperandVal(0) == 0) {
         return Op2;
       }
-      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR64,
+      SDNode *OffsetNode = DAG.getMachineNode(WebAssembly::HANDLE_ADD, DL, MVT::iFATPTR128,
           Op2, Op1.getOperand(0));
       return SDValue(OffsetNode, 0);
     }
@@ -1826,7 +1826,7 @@ SDValue WebAssemblyTargetLowering::LowerHandleBinOp(SDValue Op,
     SDValue Op2 = Op2Ty == MVT::i32 ? Op.getOperand(1) :
                   DAG.getNode(ISD::PTRTOINT, DL, Ty, Op.getOperand(1));
     SDValue Offset = DAG.getNode(Op.getOpcode(), DL, Ty, Op1, Op2);
-    return DAG.getNode(ISD::INTTOPTR, DL, MVT::iFATPTR64, Offset);
+    return DAG.getNode(ISD::INTTOPTR, DL, MVT::iFATPTR128, Offset);
   }
   default:
     llvm_unreachable("unexpected opcode");
