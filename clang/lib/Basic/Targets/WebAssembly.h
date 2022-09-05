@@ -162,7 +162,7 @@ public:
                                    const TargetOptions &Opts)
       : WebAssemblyTargetInfo(T, Opts) {
     // the following assumes CapabilityABI, and the equivalent of RISCV's "+xcheri" feature
-    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128-pf200:64:64:64:32-A200-P0-G200");
+    resetDataLayout("e-m:e-p:32:32-i64:64-n32:64-S128-pf200:128:128:128:32-A200-P0-G200");
   }
 
 protected:
