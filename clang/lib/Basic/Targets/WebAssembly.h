@@ -77,7 +77,7 @@ private:
                  const std::vector<std::string> &FeaturesVec) const override;
   bool hasFeature(StringRef Feature) const final;
 
-  uint64_t CapSize = 64;
+  uint64_t CapSize = 128;
   bool SupportsCapabilities() const override { return true; }
   unsigned getIntCapWidth() const override { return CapSize; }
   unsigned getIntCapAlign() const override { return CapSize; }
