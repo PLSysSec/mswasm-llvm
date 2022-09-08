@@ -127,7 +127,7 @@ static std::string computeDataLayout(const Triple &TT, StringRef FS) {
   if (TT.isArch64Bit())
     CapTypes = "-pf200:128:128:128:64";
   else
-    CapTypes = "-pf200:64:64:64:32";
+    CapTypes = "-pf200:128:128:128:32";
 
   // For MS-Wasm, it's always a "CheriPureCapABI"
   PurecapOptions = "-A200-P0-G200";
