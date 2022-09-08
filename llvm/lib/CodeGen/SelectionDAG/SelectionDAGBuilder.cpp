@@ -581,9 +581,9 @@ static void getCopyToParts(SelectionDAG &DAG, const SDLoc &DL, SDValue Val,
   } else if (NumParts * PartBits < ValueVT.getSizeInBits()) {
     // If the parts cover less bits than value has, truncate the value.
     // Special case: convert handles to i32
-    if (ValueVT.getSimpleVT() == MVT::iFATPTR64) {
+    if (ValueVT.getSimpleVT() == MVT::iFATPTR128) {
       assert(PartVT == MVT::i32 && NumParts == 1 && 
-             "Mismatch: Cannot convert iFATPTR64 to unknown type!");
+             "Mismatch: Cannot convert iFATPTR128 to unknown type!");
       Val = DAG.getNode(ISD::PTRTOINT, DL, PartVT, Val);
     } else {
       assert((PartVT.isInteger() || PartVT == MVT::x86mmx) &&
