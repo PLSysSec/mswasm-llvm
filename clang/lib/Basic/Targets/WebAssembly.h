@@ -92,8 +92,9 @@ private:
   uint64_t getPointerAlignV(unsigned AddrSpace) const override {
     return (AddrSpace == 200) ? CapSize : PointerAlign;
   }
+  // size of the address space that the cheri cap ranges over
   uint64_t getPointerRangeForCHERICapability() const override {
-    return CapSize;
+    return 64;
   }
 
   bool handleTargetFeatures(std::vector<std::string> &Features,
